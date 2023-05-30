@@ -1,0 +1,25 @@
+﻿@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+@{
+  var antiforgeryToken = Antiforgery.GetAndStoreTokens(Context).RequestToken;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>AI Assistant - @Organisation.Instance.Name</title>
+  <link rel="stylesheet" href="/css/site.css" asp-append-version="true" />
+</head>
+<body>
+  <main>  
+    @RenderBody()
+  </main>
+  @if (User.Identity.IsAuthenticated) {
+  <script>
+    const domain = '@User.Identity.Name.Split('@')[1]';
+    const antiforgeryToken = '@antiforgeryToken';
+  </script>
+  }
+  @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

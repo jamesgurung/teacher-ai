@@ -1,0 +1,22 @@
+﻿@page
+@{
+  var returnUrl = Request.Query["path"].FirstOrDefault();
+}
+
+<header>
+<div>
+  &#x1F916; <b>AI Assistant</b>
+</div>
+<div>
+    <span class="hide-mobile"><i>@Organisation.Instance.Name</i></span>
+</div>
+</header>
+
+<div style="margin: 60px 0 20px">
+  <p style="text-align: center">
+    Please sign in using your organisational Microsoft account.
+  </p>
+  <p style="text-align: center">
+    <a href="/auth/login/challenge@(string.IsNullOrEmpty(returnUrl) ? string.Empty : $"?path={returnUrl}")">Login</a>
+  </p>
+</div>

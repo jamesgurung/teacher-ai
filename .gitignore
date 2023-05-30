@@ -1,0 +1,7 @@
+.vs/
+bin/
+obj/
+Properties/PublishProfiles/
+Properties/ServiceDependencies/
+appsettings.json
+*.user

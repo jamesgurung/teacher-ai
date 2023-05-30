@@ -1,0 +1,309 @@
+﻿* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: arial, helvetica, sans-serif;
+  font-size: 14px;
+  margin: 0 auto;
+  background-color: #eee;
+  padding: 12px 12px;
+  color: #222;
+  max-width: 720px;
+}
+
+header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 12px 15px;
+  background-color: #ddd;
+  border-bottom: 1px solid #999;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+main {
+  position: relative;
+  background-color: #fff;
+  padding: 12px;
+  border: 1px solid #999;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+
+@media (max-width: 680px) {
+  .hide-mobile {
+    display: none;
+  }
+}
+
+pre {
+  white-space: pre-wrap;
+  font-size: 12px;
+}
+
+#credits {
+  display: inline-block;
+  position: relative;
+  top: 2px;
+  width: 30px;
+  height: 14px;
+  border: 1px solid black;
+  background-color: white;
+  margin: 0 6px;
+  border-radius: 3px;
+}
+
+#credits div {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 100%;
+}
+
+#credits div.green {
+  background-color: #00b300;
+}
+
+#credits div.red {
+  background-color: #f70000;
+}
+
+#messages {
+  overflow-y: scroll;
+  position: absolute;
+  top: 60px;
+  left: 12px;
+  right: 12px;
+  bottom: 50px;
+  padding-right: 12px;
+}
+
+#prompt {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  right: 12px;
+  padding: 6px;
+  resize: none;
+  overflow-y: auto;
+  font-family: arial, helvetica, sans-serif;
+  font-size: 14px;
+  line-height: 16px;
+}
+
+.message {
+  padding: 0.1px 12px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  line-height: 22px;
+  width: fit-content;
+  position: relative;
+  max-width: 100%;
+  word-break: break-word;
+}
+
+.message.user {
+  margin-left: auto;
+  background-color: #d7ebff;
+}
+
+.message.assistant {
+  background-color: #f1f1f1;
+}
+
+.message.user.title {
+  font-weight: bold;
+}
+
+.message.user.title.admin {
+  background-color: #ffd7d7;
+}
+
+.message.assistant.error {
+  background-color: #ffe8e8;
+}
+
+.message.assistant span {
+  margin-left: 6px;
+  font-size: 12px;
+  color: #8d8d8d;
+  line-height: 12px;
+}
+
+.message h1 {
+  font-size: 22px;
+  margin-top: 24px;
+}
+
+.message h2 {
+  font-size: 20px;
+}
+
+.message h3 {
+  font-size: 18px;
+}
+
+.message h4 {
+  font-size: 16px;
+}
+
+.message table {
+  border-collapse: collapse;
+  border-spacing: 0;
+  margin: 12px 0;
+}
+
+.message table :is(td,th) {
+  border: 1px solid #ddd;
+  padding: 3px 6px;
+}
+
+.message p.issue {
+  color: red;
+  font-weight: bold;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.boost {
+  display: none;
+  position: absolute;
+  bottom: -4px;
+  right: -10px;
+  cursor: pointer;
+}
+
+.message:hover .boost {
+  display: block;
+}
+
+.message.boosted {
+  background-color: #e4ffe8;
+}
+
+.hint {
+  font-size: 12px;
+  color: #8d8d8d;
+  line-height: 12px;
+  text-align: center;
+  margin: 18px 0 12px;
+}
+
+.option {
+  padding: 0 12px;
+  border-radius: 6px;
+  display: inline-block;
+  background-color: #d7ebff;
+  cursor: pointer;
+  margin-bottom: 6px;
+  margin-right: 6px;
+  line-height: 22px;
+}
+
+.option:hover {
+  background-color: #c7dbff;
+}
+
+.option.admin, .message.user.admin {
+  background-color: #ffd7d7;
+}
+
+.option.admin:hover {
+  background-color: #ffc7c7;
+}
+
+ol, ul {
+  margin: 12px 0 12px 30px;
+  padding: 0;
+}
+
+li {
+  font-family: arial, helvetica, sans-serif;
+  line-height: 22px;
+  padding: 0;
+  margin: 0;
+}
+
+p {
+  padding: 0;
+  margin: 8px 0;
+}
+
+a, a:visited {
+  color: #1188E6;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.typing {
+  background-color: #ddd;
+  width: 40px;
+  height: 20px;
+  border-radius: 10px;
+  margin: 9px auto;
+  padding: 0 5px 0 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.typing span {
+  display: block;
+  height: 5px;
+  width: 5px;
+  border-radius: 50%;
+  background-color: #8d8d8d;
+  position: relative;
+  margin: 1px 0;
+  animation: typing 1000ms ease-in-out infinite;
+  animation-delay: 3600ms;
+}
+
+.typing span:nth-child(1) {
+  animation-delay: 0ms;
+}
+
+.typing span:nth-child(2) {
+  animation-delay: 333ms;
+}
+
+.typing span:nth-child(3) {
+  animation-delay: 666ms;
+}
+
+@keyframes typing {
+  0% {
+    transform: scale(1)
+  }
+  33% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.4);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.full-width {
+  width: 100%;
+}
+
+.progress {
+  width: 100%;
+  height: 20px;
+  background-color: #fafafa;
+  border: solid 1px #aaa;
+}
+
+.progress div {
+  width: 0%;
+  height: 100%;
+  background-color: #11ee66;
+  transition: width 1.5s ease-in-out;
+}

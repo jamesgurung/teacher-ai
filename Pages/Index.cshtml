@@ -1,0 +1,35 @@
+﻿@page
+@inject TableServiceClient client
+@{
+  var userParts = User.Identity.Name.Split('@');
+  var service = new TableService(client, userParts[1]);
+  var spend = (int)Math.Round(await service.CalculateUsageAsync(userParts[0]), 0, MidpointRounding.AwayFromZero);
+  var remaining = Math.Max(0, Organisation.Instance.UserCreditsPerWeek - spend);
+}
+
+<header>
+  <div>
+    &#x1F916; <b>AI Assistant</b><a href="/" style="margin-left: 18px">New Chat</a>
+  </div>
+  <div>
+      <span class="hide-mobile">@User.Identity.Name </span><div id="credits"><div></div></div> <a href="/auth/logout">Logout</a>
+  </div>
+</header>
+
+<div id="messages">
+  <div class="message assistant"><p>Hi there! I'm here to help with educational and administrative tasks. Please do not submit personal or confidential information. All messages are recorded by your organisation.</p></div>
+</div>
+<textarea id="prompt" disabled autofocus></textarea>
+
+@section Scripts {
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0-preview.4.23260.4/signalr.min.js" integrity="sha512-yiABJR9EVuPjD1Fhy2xdkNQZG4akO16trbh/6aHoZFaTfrH0VEtxUdyjTtwB3Ki099QIQZ+O4GH43IawL9075w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js" integrity="sha512-zAs8dHhwlTbfcVGRX1x0EZAH/L99NjAFzX6muwOcOJc7dbGFNaW4O7b9QOyCMRYBNjO+E0Kx6yLDsiPQhhWm7g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script>
+    let credits = @remaining;
+    const maxCredits = @Organisation.Instance.UserCreditsPerWeek;
+    const adminName = '@Organisation.Instance.AdminName';
+    const isAdmin = @User.IsInRole(Roles.Admin).ToString().ToLower();
+  </script>
+  <script src="/js/templates.js" asp-append-version="true"></script>
+  <script src="/js/index.js" asp-append-version="true"></script>
+}
