@@ -76,7 +76,8 @@ const templates = [
               { text: 'What is the topic?' }
             ],
             prompt: 'Generate 10 [0] questions about [1]. These should be multiple-choice questions suitable for secondary school students. For each question, include one correct answer and three distractors which are incorrect and contain common misconceptions.\n\nOutput format:\n\n1. Question\n    a. Answer 1\n    b. Answer 2 [CORRECT]\n    c. Answer 3\n    d. Answer 4\n\nRandomise the positions of the correct answers.',
-            temperature: 0.4
+            temperature: 0.2,
+            model: 'gpt-4'
           },
 
           {
@@ -87,7 +88,8 @@ const templates = [
               { text: 'What is the topic?' }
             ],
             prompt: 'Generate 10 [0] questions about [1]. These should be short-answer questions suitable for secondary school students. Include the answers.\n\nOutput format:\n\n1. Question\n    * Answer',
-            temperature: 0.4
+            temperature: 0.2,
+            model: 'gpt-4'
           },
 
           {
@@ -97,7 +99,8 @@ const templates = [
               { text: 'Paste the text below.' }
             ],
             prompt: 'Read this text and write 10 comprehension questions for secondary school students, to test that they have understood the meaning. Include the answers.\n\nOutput format:\n\n1. Question\n    * Answer\n\nText:\n"""\n[0]\n"""\n\nComprehension questions:',
-            temperature: 0.4
+            temperature: 0.2,
+            model: 'gpt-4'
           }
 
         ]
@@ -111,7 +114,8 @@ const templates = [
           { text: 'What is the topic?' }
         ],
         prompt: 'Script a model explanation about "[1]", for students studying [0] in a UK secondary school. Tailor the explanation to this age group. Do not include a greeting, introduction, or goodbye. Explain the topic as clearly as possible, using analogies, examples, or links to existing knowledge where appropriate.\n\nTopic:\n[1]\n\nTeacher\'s explanation:',
-        temperature: 0.4
+        temperature: 0.3,
+        model: 'gpt-4'
       },
 
       {
@@ -230,7 +234,8 @@ const templates = [
           { text: 'Summarise some of the student\'s qualities.' }
         ],
         prompt: 'Write a reference for our student, [0].\n\nStudent qualities:\n[1]\n\nReference from teacher:',
-        temperature: 0.2
+        temperature: 0.2,
+        model: 'gpt-4'
       }
 
     ]
@@ -248,7 +253,7 @@ const templates = [
           { text: 'What is the job title?', hint: 'e.g. "IT technician"' }
         ],
         prompt: 'Create a job advert (paragraphs), job description (bullet points), and person specification (bullet points) for the role of [0] in a UK secondary school. Ensure the information is clear and well-organised, using subheadings.',
-        temperature: 0.4
+        temperature: 0.3
       },
 
       {
@@ -258,7 +263,7 @@ const templates = [
           { text: 'What is the job title?', hint: 'e.g. "science teacher"' }
         ],
         prompt: 'Generate 10 interview questions for the role of [0] in a UK secondary school. Make sure the questions are open-ended and relevant to the role.\n\nUse the format:\n1. Question\n    * A good response might include...',
-        temperature: 0.5
+        temperature: 0.4
       },
 
       {
@@ -284,7 +289,7 @@ const templates = [
       { text: 'How can I help?' }
     ],
     prompt: '[0]',
-    temperature: 0.5
+    temperature: 0.4
   },
 
   {

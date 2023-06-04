@@ -4,6 +4,8 @@ This is a web app which allows teachers to submit prompts to OpenAI models.
 
 It is a thin wrapper around Azure OpenAI Service with [pre-written prompts](/wwwroot/js/templates.js) to assist teachers with common educational and administrative tasks. There is also experimental support for bulk marking of student work.
 
+![Preview of Teacher AI](preview.gif)
+
 ## Setup
 
 1. Create a general purpose v2 storage account in Microsoft Azure, and within it create a table called `chatlog`.
