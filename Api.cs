@@ -181,7 +181,7 @@ Output format:
           if (parts.Length != 2 || !int.TryParse(parts[1], out var n)) return Results.Ok("Usage: recent {n}");
           var recent = await service.GetRecentChatsAsync(n);
           if (recent.Count == 0) return Results.Ok("No conversations in the past 3 days.");
-          var intro = recent.Count == n ? $"{n} most recent conversations" : $"All ${recent.Count} conversations from the past 3 days";
+          var intro = recent.Count == n ? $"{n} most recent conversations" : $"All {recent.Count} conversations from the past 3 days";
           var output = $"{intro}:\n\n" + string.Join("\n\n",
             recent.Select(o => $"# {o.First().RowKey.Split('_')[0]} - {new DateTime(long.Parse(o.First().RowKey.Split('_')[1], CultureInfo.InvariantCulture)):ddd d MMM 'at' HH:mm} " +
             $"- {o.First().Template}\n\n{string.Join("\n\n", o.Select(c => $"**{o.First().RowKey.Split('_')[0]}**:\n\n{c.UserPrompt}\n\n**{c.Model}**:\n\n{c.Completion}"))}\n\n"));

@@ -25,7 +25,7 @@ document.addEventListener('visibilitychange', async () => {
   if (document.visibilityState === 'visible' && connection.state === signalR.HubConnectionState.Disconnected) await connection.start();
 });
 
-marked.setOptions({ breaks: true, gfm: true });
+marked.setOptions({ breaks: true, gfm: true, headerIds: false, mangle: false });
 
 if (credits > 0) {
   displayOptions();
