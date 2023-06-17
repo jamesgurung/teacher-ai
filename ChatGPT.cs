@@ -7,22 +7,9 @@ using System.Text.Json.Serialization;
 
 namespace TeacherAI;
 
-public class ChatGPT
+public class ChatGPT(HttpClient client, string model, IHubClients<IChatClient> hub = null, string chatId = null)
 {
-  private readonly HttpClient _client;
-  private readonly IHubClients<IChatClient> _hub;
-  private readonly string _chatId;
-  private readonly string _model;
-
   private static readonly ITokenizer _tokenizer = TokenizerBuilder.CreateByEncoderName("cl100k_base");
-
-  public ChatGPT(HttpClient client, string model, IHubClients<IChatClient> hub = null, string chatId = null)
-  {
-    _client = client;
-    _hub = hub;
-    _chatId = chatId;
-    _model = model;
-  }
 
   public async Task<ChatGPTCompletion> SendGptRequestStreamingAsync(IList<ChatGPTMessage> prompts, decimal temperature, decimal topP, string identifier) {
     var request = new ChatGPTRequest
@@ -37,7 +24,7 @@ public class ChatGPT
 
     using var body = JsonContent.Create(request);
     using var message = new HttpRequestMessage(HttpMethod.Post, string.Empty) { Content = body };
-    using var response = await _client.SendAsync(message, HttpCompletionOption.ResponseHeadersRead);
+    using var response = await client.SendAsync(message, HttpCompletionOption.ResponseHeadersRead);
     if (response.StatusCode == HttpStatusCode.BadRequest) return new() { Content = "Request rejected.", FinishReason = "prompt_filter" };
     if (!response.IsSuccessStatusCode) return new() { Content = "Request failed.", FinishReason = "error" };
     using var stream = await response.Content.ReadAsStreamAsync();
@@ -53,7 +40,7 @@ public class ChatGPT
       if (chunk?.FinishReason is not null) finishReason = chunk.FinishReason;
       if (chunk?.Value is null) continue;
       content.Append(chunk.Value);
-      if (_hub is not null) await _hub.Client(_chatId).Type(chunk.Value);
+      if (hub is not null) await hub.Client(chatId).Type(chunk.Value);
     }
     return new() { Content = content.ToString(), FinishReason = finishReason };
   }
@@ -67,11 +54,11 @@ public class ChatGPT
       TopP = topP,
       Choices = 1,
       Messages = prompts,
-      Model = _model
+      Model = model
     };
 
     using var body = JsonContent.Create(request);
-    using var response = await _client.PostAsync(string.Empty, body);
+    using var response = await client.PostAsync(string.Empty, body);
     if (response.StatusCode == HttpStatusCode.BadRequest) return new() { Content = "Request rejected.", FinishReason = "prompt_filter" };
     if (!response.IsSuccessStatusCode) return new() { Content = "Request failed.", FinishReason = "error" };
     var data = JsonSerializer.Deserialize<ChatGPTResponse>(await response.Content.ReadAsStringAsync());    

@@ -65,15 +65,17 @@ public static class AuthConfig
         };
       });
 
-    builder.Services.AddAuthorization(options => { options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build(); });
+    builder.Services.AddAuthorizationBuilder().SetFallbackPolicy(new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
   }
+
+  private static readonly string[] authenticationSchemes = new[] { "Microsoft" };
 
   public static void MapAuthPaths(this WebApplication app)
   {
     app.MapGet("/auth/login/challenge", [AllowAnonymous] ([FromQuery] string path) =>
       Results.Challenge(
         new AuthenticationProperties { RedirectUri = path is null ? "/" : WebUtility.UrlDecode(path), AllowRefresh = true, IsPersistent = true },
-        new[] { "Microsoft" }
+        authenticationSchemes
       )
     );
 

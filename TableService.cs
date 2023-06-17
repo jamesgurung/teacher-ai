@@ -5,27 +5,19 @@ using System.Text.Json;
 
 namespace TeacherAI;
 
-public class TableService
+public class TableService(TableServiceClient client, string domain)
 {
-  private readonly TableServiceClient _client;
-  private readonly string _domain;
   private static readonly JsonSerializerOptions _jsonOptions = new() {
     PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     WriteIndented = true
   };
 
-  public TableService(TableServiceClient client, string domain)
-  {
-    _client = client;
-    _domain = domain;
-  }
-
   public async Task LogChatAsync(string username, ChatRequest chatRequest, long ticks, int promptTokens, int completionTokens, string contentFilter)
   {
     ArgumentNullException.ThrowIfNull(chatRequest);
-    var table = _client.GetTableClient("chatlog");
+    var table = client.GetTableClient("chatlog");
     var entry = new ChatLog {
-      PartitionKey = _domain,
+      PartitionKey = domain,
       RowKey = $"{username}_{ticks}",
       Chat = JsonSerializer.Serialize(chatRequest.Messages, _jsonOptions),
       Template = chatRequest.TemplateId,
@@ -42,12 +34,12 @@ public class TableService
   }
 
   public async Task<decimal> CalculateUsageAsync(string username) {
-    var table = _client.GetTableClient("chatlog");
+    var table = client.GetTableClient("chatlog");
     var lastMonday = DateTime.UtcNow.Date.AddDays(-(((int)DateTime.UtcNow.DayOfWeek + 6) % 7));
     var start = $"{username}_{lastMonday.Ticks}";
     var end = $"{username}_{DateTime.UtcNow.AddDays(1).Ticks}";
     var results = await table.QueryAsync<ChatLog>(
-      filter: o => o.PartitionKey == _domain && o.RowKey.CompareTo(start) >= 0 && o.RowKey.CompareTo(end) < 0,
+      filter: o => o.PartitionKey == domain && o.RowKey.CompareTo(start) >= 0 && o.RowKey.CompareTo(end) < 0,
       select: new[] { nameof(ChatLog.PromptTokens), nameof(ChatLog.CompletionTokens), nameof(ChatLog.Model) }
     ).ToListAsync();
     return results
@@ -57,10 +49,10 @@ public class TableService
 
   public async Task<decimal> CalculateTotalSpendAsync(int days)
   {
-    var table = _client.GetTableClient("chatlog");
+    var table = client.GetTableClient("chatlog");
     var start = DateTime.UtcNow.AddDays(-days);
     var results = await table.QueryAsync<ChatLog>(
-      filter: o => o.PartitionKey == _domain && o.Timestamp >= start && o.Model != "credits",
+      filter: o => o.PartitionKey == domain && o.Timestamp >= start && o.Model != "credits",
       select: new[] { nameof(ChatLog.RowKey), nameof(ChatLog.PromptTokens), nameof(ChatLog.CompletionTokens), nameof(ChatLog.Model) }
     ).ToListAsync();
     return results
@@ -70,10 +62,10 @@ public class TableService
   }
 
   public async Task AddCreditsAsync(string username, int credits) {
-    var table = _client.GetTableClient("chatlog");
+    var table = client.GetTableClient("chatlog");
     var entry = new ChatLog
     {
-      PartitionKey = _domain,
+      PartitionKey = domain,
       RowKey = $"{username}_{DateTime.UtcNow.Ticks}",
       Model = "credits",
       PromptTokens = credits
@@ -83,10 +75,10 @@ public class TableService
 
   public async Task<List<List<ChatLog>>> GetRecentChatsAsync(int n)
   {
-    var table = _client.GetTableClient("chatlog");
+    var table = client.GetTableClient("chatlog");
     var start = DateTime.UtcNow.AddDays(-3);
     var results = await table.QueryAsync<ChatLog>(
-      filter: o => o.PartitionKey == _domain && o.Timestamp >= start && o.Model != "credits"
+      filter: o => o.PartitionKey == domain && o.Timestamp >= start && o.Model != "credits"
     ).ToListAsync();
     return results.Select(o => new { Chat = o, Ticks = long.Parse(o.RowKey.Split('_')[1], CultureInfo.InvariantCulture) }).Where(o => o.Ticks >= start.Ticks)
       .OrderByDescending(o => o.Ticks)
@@ -95,10 +87,10 @@ public class TableService
 
   public async Task<List<string>> GetLeaderboardAsync()
   {
-    var table = _client.GetTableClient("chatlog");
+    var table = client.GetTableClient("chatlog");
     var lastMonday = DateTime.UtcNow.Date.AddDays(-(((int)DateTime.UtcNow.DayOfWeek + 6) % 7));
     var items = await table.QueryAsync<ChatLog>(
-      filter: o => o.PartitionKey == _domain && o.Timestamp >= lastMonday && o.Model != "credits"
+      filter: o => o.PartitionKey == domain && o.Timestamp >= lastMonday && o.Model != "credits"
     ).ToListAsync();
     var results = items.Select(o => new {
         Chat = o,
@@ -118,7 +110,8 @@ public class TableService
     return results.Select(o => $"| {o.User} | {o.Words} | {o.Chats} | {Math.Round(o.Credits, 0, MidpointRounding.AwayFromZero)} |").Append(totals).ToList();
   }
 
-  private static int CountWords(string text) => text?.Split(new char[] { ' ', ',', '.', ';', ':', '-', '\n', '\r', '\t' }, StringSplitOptions.RemoveEmptyEntries).Length ?? 0;
+  private static readonly char[] separators = new char[] { ' ', ',', '.', ';', ':', '-', '\n', '\r', '\t' };
+  private static int CountWords(string text) => text?.Split(separators, StringSplitOptions.RemoveEmptyEntries).Length ?? 0;
 }
 
 public class ChatLog : ITableEntity
