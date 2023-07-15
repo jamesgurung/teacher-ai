@@ -13,11 +13,11 @@ public static class Api
   {
     var group = app.MapGroup("/api").ValidateAntiforgery();
 
-    group.MapPost("/chat", [Authorize] async (ChatRequest chatRequest, HttpContext context, TableServiceClient client, IHttpClientFactory httpClientFactory, IHubContext<ChatHub, IChatClient> hubContext) =>
+    group.MapPost("/chat", [Authorize] async (ChatRequest chatRequest, HttpContext context, IHttpClientFactory httpClientFactory, IHubContext<ChatHub, IChatClient> hubContext) =>
     {
       var ticks = DateTime.UtcNow.Ticks;
       var nameParts = context.User.Identity.Name.Split('@');
-      var service = new TableService(client, nameParts[1]);
+      var service = new TableService(nameParts[1]);
 
       var remainingCredits = Organisation.Instance.UserCreditsPerWeek - await service.CalculateUsageAsync(nameParts[0]);
       if (remainingCredits <= 0) return Results.BadRequest("Insufficient credits.");
@@ -55,10 +55,10 @@ public static class Api
       return Results.Ok(data);
     });
 
-    group.MapPost("/feedback", async (FeedbackRequest feedbackRequest, HttpContext context, TableServiceClient client, IHttpClientFactory httpClientFactory, IHubContext<ChatHub, IChatClient> hubContext) =>
+    group.MapPost("/feedback", async (FeedbackRequest feedbackRequest, HttpContext context, IHttpClientFactory httpClientFactory, IHubContext<ChatHub, IChatClient> hubContext, IWebHostEnvironment env) =>
     {
       var nameParts = context.User.Identity.Name.Split('@');
-      var service = new TableService(client, nameParts[1]);
+      var service = new TableService(nameParts[1]);
 
       var remainingCredits = Organisation.Instance.UserCreditsPerWeek - await service.CalculateUsageAsync(nameParts[0]);
       if (remainingCredits <= 0) return Results.BadRequest("Insufficient credits.");
@@ -131,17 +131,18 @@ Output format:
           }
           finally
           {
-          #if !DEBUG
-          var chatRequest = new ChatRequest
-          {
-            Messages = prompts,
-            Temperature = 0.0m,
-            ConversationId = feedbackRequest.ConversationId,
-            Model = "gpt-4",
-            TemplateId = "feedback-spreadsheet"
-          };
-          await service.LogChatAsync(nameParts[0], chatRequest, ticks, promptTokens, completionTokens, GetFilterReason(response.FinishReason));
-          #endif
+            if (!env.IsDevelopment())
+            {
+              var chatRequest = new ChatRequest
+              {
+                Messages = prompts,
+                Temperature = 0.0m,
+                ConversationId = feedbackRequest.ConversationId,
+                Model = "gpt-4",
+                TemplateId = "feedback-spreadsheet"
+              };
+              await service.LogChatAsync(nameParts[0], chatRequest, ticks, promptTokens, completionTokens, GetFilterReason(response.FinishReason));
+            }
           }
         }
 
@@ -161,10 +162,10 @@ Output format:
       return Results.Ok();
     });
 
-    group.MapPost("/admin", [Authorize(Roles = Roles.Admin)] async (AdminRequest adminRequest, HttpContext context, TableServiceClient client) =>
+    group.MapPost("/admin", [Authorize(Roles = Roles.Admin)] async (AdminRequest adminRequest, HttpContext context) =>
     {
       var nameParts = context.User.Identity.Name.Split('@');
-      var service = new TableService(client, nameParts[1]);
+      var service = new TableService(nameParts[1]);
       var parts = adminRequest.Command.ToLowerInvariant().Split(' ');
       var command = parts[0];
       switch (command)

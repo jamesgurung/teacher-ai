@@ -1,8 +1,7 @@
 ﻿@page
-@inject TableServiceClient client
 @{
   var userParts = User.Identity.Name.Split('@');
-  var service = new TableService(client, userParts[1]);
+  var service = new TableService(userParts[1]);
   var spend = (int)Math.Round(await service.CalculateUsageAsync(userParts[0]), 0, MidpointRounding.AwayFromZero);
   var remaining = Math.Max(0, Organisation.Instance.UserCreditsPerWeek - spend);
 }
@@ -22,8 +21,8 @@
 <textarea id="prompt" disabled autofocus></textarea>
 
 @section Scripts {
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0-preview.5.23302.2/signalr.min.js" integrity="sha512-SkWXxCi1mo2zaK1OUhyohnq70D0KT+Jc/MlJp5gDJ4GVtLZEbdygmRt5kphwXbBu19BThDwc57T9tbHbRygKqA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/5.1.0/marked.min.js" integrity="sha512-j5KAPeir0rGl+OSddiUeUtUlG+GK7acI/kNQqrpjSSB1IlDUbj3VnQOyoW3GWpPj7i8CSfb0T+Q4IRHxAPRxCA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0-preview.6.23329.11/signalr.min.js" integrity="sha512-6eys6d376IHeDtyX+rAIxelBQvfPbRcbL0rhquWSmF+An2UgFw37YPlRDutzQf+ei62pgrvj5LqMyqrIfoK8wA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/5.1.1/marked.min.js" integrity="sha512-geNSPsVaubOv19D7VZY9lJH7MNdRkIq84doaoubf6zknjXsyBQ77XQbqiHX89Mg3e+67E16huocEGUlR4Pgjtg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script>
     let credits = @remaining;
     const maxCredits = @Organisation.Instance.UserCreditsPerWeek;

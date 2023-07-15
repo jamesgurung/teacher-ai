@@ -5,8 +5,15 @@ using System.Text.Json;
 
 namespace TeacherAI;
 
-public class TableService(TableServiceClient client, string domain)
+public class TableService(string domain)
 {
+  public static void Configure(string connectionString)
+  {
+    client = new TableServiceClient(connectionString);
+  }
+
+  private static TableServiceClient client;
+
   private static readonly JsonSerializerOptions _jsonOptions = new() {
     PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     WriteIndented = true

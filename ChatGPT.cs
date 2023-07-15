@@ -9,7 +9,11 @@ namespace TeacherAI;
 
 public class ChatGPT(HttpClient client, string model, IHubClients<IChatClient> hub = null, string chatId = null)
 {
-  private static readonly ITokenizer _tokenizer = TokenizerBuilder.CreateByEncoderName("cl100k_base");
+  public static async Task CreateTokenizerAsync() {
+    _tokenizer = await TokenizerBuilder.CreateByEncoderNameAsync("cl100k_base");
+  }  
+
+  private static ITokenizer _tokenizer;
 
   public async Task<ChatGPTCompletion> SendGptRequestStreamingAsync(IList<ChatGPTMessage> prompts, decimal temperature, decimal topP, string identifier) {
     var request = new ChatGPTRequest

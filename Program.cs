@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Http.Json;
-using Microsoft.Extensions.Azure;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using TeacherAI;
@@ -8,11 +7,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 var storageAccountName = builder.Configuration["Azure:StorageAccountName"];
 var storageAccountKey = builder.Configuration["Azure:StorageAccountKey"];
-builder.Services.AddAzureClients(clientBuilder =>
-{
-  var connectionString = $"DefaultEndpointsProtocol=https;AccountName={storageAccountName};AccountKey={storageAccountKey};EndpointSuffix=core.windows.net";
-  clientBuilder.AddTableServiceClient(connectionString);
-});
+var connectionString = $"DefaultEndpointsProtocol=https;AccountName={storageAccountName};AccountKey={storageAccountKey};EndpointSuffix=core.windows.net";
+TableService.Configure(connectionString);
 
 builder.ConfigureAuth();
 builder.Services.AddResponseCompression();
@@ -26,6 +22,7 @@ var models = builder.Configuration.GetSection("Azure:OpenAIModels").Get<List<Ope
 OpenAIModel.Dictionary = models.ToDictionary(model => model.Name);
 TokenAuthenticationProvider.Configure(builder.Configuration["Azure:TenantId"], builder.Configuration["Azure:ClientId"],
   builder.Configuration["Azure:ClientSecret"], builder.Configuration["Azure:RefreshToken"]);
+await ChatGPT.CreateTokenizerAsync();
 
 foreach (var model in OpenAIModel.Dictionary) {
   builder.Services.AddHttpClient(model.Key, options => {
@@ -48,7 +45,11 @@ if (!app.Environment.IsDevelopment())
   app.UseHsts();
   app.Use(async (context, next) =>
   {
-    if (!context.Request.Host.Host.Equals(Organisation.Instance.AppWebsite, StringComparison.OrdinalIgnoreCase))
+    if (context.Request.Path.Value == "/" && context.Request.Headers.UserAgent.ToString().Equals("alwayson", StringComparison.OrdinalIgnoreCase))
+    {
+      context.Response.StatusCode = 200;
+    }
+    else if (!context.Request.Host.Host.Equals(Organisation.Instance.AppWebsite, StringComparison.OrdinalIgnoreCase))
     {
       context.Response.Redirect($"https://{Organisation.Instance.AppWebsite}{context.Request.Path.Value}{context.Request.QueryString}", true);
     }
@@ -71,4 +72,4 @@ app.MapRazorPages();
 app.MapAuthPaths();
 app.MapApiPaths();
 
-app.Run();
+await app.RunAsync();
