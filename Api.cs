@@ -9,6 +9,8 @@ namespace TeacherAI;
 
 public static class Api
 {
+  private static readonly JsonSerializerOptions jsonOptions = new() { PropertyNameCaseInsensitive = true };
+
   public static void MapApiPaths(this WebApplication app)
   {
     var group = app.MapGroup("/api").ValidateAntiforgery();
@@ -150,7 +152,7 @@ Output format:
         try
         {
           feedback = response.FinishReason == "stop"
-            ? JsonSerializer.Deserialize<FeedbackResponse>(response.Content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+            ? JsonSerializer.Deserialize<FeedbackResponse>(response.Content, jsonOptions)
             : new() { Mark = -1, Evaluation = response.FinishReason == "error" ? "Error: marking failed" : "Error: content filter triggered" };
         } catch (JsonException) {
           feedback = new() { Mark = -1, Evaluation = "Error: unable to parse output" };

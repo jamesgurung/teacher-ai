@@ -117,7 +117,7 @@ public class TableService(string domain)
     return results.Select(o => $"| {o.User} | {o.Words} | {o.Chats} | {Math.Round(o.Credits, 0, MidpointRounding.AwayFromZero)} |").Append(totals).ToList();
   }
 
-  private static readonly char[] separators = new char[] { ' ', ',', '.', ';', ':', '-', '\n', '\r', '\t' };
+  private static readonly char[] separators = [' ', ',', '.', ';', ':', '-', '\n', '\r', '\t'];
   private static int CountWords(string text) => text?.Split(separators, StringSplitOptions.RemoveEmptyEntries).Length ?? 0;
 }
 

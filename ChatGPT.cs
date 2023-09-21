@@ -69,7 +69,7 @@ public class ChatGPT(HttpClient client, string model, IHubClients<IChatClient> h
     return new() { Content = data.Value, FinishReason = data.FinishReason };
   }
 
-  private static readonly string[] _emptyArray = Array.Empty<string>();
+  private static readonly string[] _emptyArray = [];
   public static int CountPromptTokens(IList<ChatGPTMessage> prompts) => prompts.Sum(o => _tokenizer.Encode(o.Content, _emptyArray).Count + 5) + 3;
   public static int CountCompletionTokens(string completion) => _tokenizer.Encode(completion, _emptyArray).Count + 1;
 }

@@ -50,12 +50,12 @@ public class TokenAuthenticationProvider : IAuthenticationProvider
 
     var postData = new List<KeyValuePair<string, string>>()
       {
-          new KeyValuePair<string, string>("client_id", _clientId),
-          new KeyValuePair<string, string>("scope", "Files.ReadWrite.All offline_access"),
-          new KeyValuePair<string, string>("refresh_token", _refreshToken),
-          new KeyValuePair<string, string>("grant_type", "refresh_token"),
-          new KeyValuePair<string, string>("client_secret", _clientSecret),
-          new KeyValuePair<string, string>("redirect_uri", _redirectUri)
+          new("client_id", _clientId),
+          new("scope", "Files.ReadWrite.All offline_access"),
+          new("refresh_token", _refreshToken),
+          new("grant_type", "refresh_token"),
+          new("client_secret", _clientSecret),
+          new("redirect_uri", _redirectUri)
       };
 
     using var content = new FormUrlEncodedContent(postData);
@@ -77,12 +77,12 @@ public class TokenAuthenticationProvider : IAuthenticationProvider
 
     var postData = new List<KeyValuePair<string, string>>()
       {
-          new KeyValuePair<string, string>("client_id", _clientId),
-          new KeyValuePair<string, string>("scope", "Files.ReadWrite.All offline_access"),
-          new KeyValuePair<string, string>("code", code),
-          new KeyValuePair<string, string>("grant_type", "authorization_code"),
-          new KeyValuePair<string, string>("client_secret", _clientSecret),
-          new KeyValuePair<string, string>("redirect_uri", _redirectUri)
+          new("client_id", _clientId),
+          new("scope", "Files.ReadWrite.All offline_access"),
+          new("code", code),
+          new("grant_type", "authorization_code"),
+          new("client_secret", _clientSecret),
+          new("redirect_uri", _redirectUri)
       };
 
     using var content = new FormUrlEncodedContent(postData);
