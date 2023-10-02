@@ -19,7 +19,7 @@ It is a thin wrapper around Azure OpenAI Service with [pre-written prompts](/www
     * Client secrets - create a new secret and save the key
     * API permissions - `Microsoft Graph - User.Read` and `Microsoft Graph - Files.ReadWrite.All`
 
-3. Create GPT-3.5-Turbo and GPT-4 deployments on Azure OpenAI Service.
+3. Create an OpenAI account.
 
 4. Create an Azure App Service web app, and configure the following settings:
 
@@ -32,14 +32,12 @@ It is a thin wrapper around Azure OpenAI Service with [pre-written prompts](/www
     * `Azure__ClientId` - the client ID of your Azure app registration
     * `Azure__ClientSecret` - the client secret of your Azure app registration
     * `Azure__TenantId` - your Azure tenant ID
-    * `Azure__OpenAIModels__0__Name` - the name of the first OpenAI model which can be used by the app (subsequent models can be set up by adding additional items with incrementing indices); the expected model names are `gpt-3.5-turbo` and `gpt-4`
-    * `Azure__OpenAIModels__0__Endpoint` - the endpoint for the first model, which can be on Azure OpenAI Service or the OpenAI platform
-    * `Azure__OpenAIModels__0__Key` - the API key for the first model
-    * `Azure__OpenAIModels__0__CostPerPromptToken` - the credit cost per prompt token for the first model
-    * `Azure__OpenAIModels__0__CostPerCompletionToken` - the credit cost per completion token for the first model
-    * `Azure__OpenAIModels__0__Fallback` - the name of a fallback model to use in case this model trips the content filter (optional)
     * `Azure__StorageAccountName` - the name of your Azure Storage account
     * `Azure__StorageAccountKey` - the key for your Azure Storage account
+    * `OpenAI__Key` - the API key for your OpenAI account
+    * `OpenAI__Models__0__Name` - the name of the first OpenAI model which can be used by the app (subsequent models can be set up by adding additional items with incrementing indices); the expected model names are `gpt-3.5-turbo` and `gpt-4`
+    * `OpenAI__Models__0__CostPerPromptToken` - the credit cost per prompt token for the first model
+    * `OpenAI__Models__0__CostPerCompletionToken` - the credit cost per completion token for the first model
  
 5. Authorise a service account, which the app will use to access Excel spreadsheets when they are shared on OneDrive.
 

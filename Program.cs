@@ -18,22 +18,17 @@ builder.Services.Configure<JsonOptions>(options => { options.SerializerOptions.P
 builder.Services.AddRazorPages(options => { options.Conventions.AllowAnonymousToFolder("/auth"); });
 
 Organisation.Instance = builder.Configuration.GetSection("Organisation").Get<Organisation>();
-var models = builder.Configuration.GetSection("Azure:OpenAIModels").Get<List<OpenAIModel>>();
+var models = builder.Configuration.GetSection("OpenAI:Models").Get<List<OpenAIModel>>();
 OpenAIModel.Dictionary = models.ToDictionary(model => model.Name);
 TokenAuthenticationProvider.Configure(builder.Configuration["Azure:TenantId"], builder.Configuration["Azure:ClientId"],
   builder.Configuration["Azure:ClientSecret"], builder.Configuration["Azure:RefreshToken"]);
 await ChatGPT.CreateTokenizerAsync();
 
-foreach (var model in OpenAIModel.Dictionary) {
-  builder.Services.AddHttpClient(model.Key, options => {
-    if (model.Value.Endpoint.Contains("openai.azure.com", StringComparison.OrdinalIgnoreCase))
-      options.DefaultRequestHeaders.Add("api-key", model.Value.Key);
-    else
-      options.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", model.Value.Key);
-    options.BaseAddress = new Uri(model.Value.Endpoint);
-    options.Timeout = TimeSpan.FromMinutes(10);
-  });
-}
+builder.Services.AddHttpClient("OpenAI", options => {
+  options.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", builder.Configuration["OpenAI:Key"]);
+  options.BaseAddress = new Uri("https://api.openai.com/v1/chat/completions");
+  options.Timeout = TimeSpan.FromMinutes(10);
+});
 OpenAIModel.Dictionary.Add("credits", new() { Name = "credits", CostPerPromptToken = -1.0m });
 
 builder.Services.AddSignalR();

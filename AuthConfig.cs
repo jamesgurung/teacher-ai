@@ -43,7 +43,7 @@ public static class AuthConfig
           {
             var email = context.Principal.Claims.FirstOrDefault(c => c.Type == "preferred_username").Value.ToLowerInvariant();
             var emailParts = email.Split('@');
-            if (!string.Equals(emailParts[1], Organisation.Instance.Domain, StringComparison.OrdinalIgnoreCase) || char.IsDigit(emailParts[0][0]))
+            if (!string.Equals(emailParts[1], Organisation.Instance.Domain, StringComparison.OrdinalIgnoreCase) || char.IsDigit(emailParts[0].Last()))
             {
               context.Response.Redirect("/auth/denied");
               context.HandleResponse();
