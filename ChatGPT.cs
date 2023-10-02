@@ -23,7 +23,8 @@ public class ChatGPT(HttpClient client, string model, IHubClients<IChatClient> h
       TopP = topP,
       Choices = 1,
       Stream = true,
-      Messages = prompts
+      Messages = prompts,
+      Model = model
     };
 
     using var body = JsonContent.Create(request);
