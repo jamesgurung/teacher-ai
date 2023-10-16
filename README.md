@@ -2,7 +2,7 @@
 
 This is a web app which allows teachers to submit prompts to OpenAI models.
 
-It is a thin wrapper around Azure OpenAI Service with [pre-written prompts](/wwwroot/js/templates.js) to assist teachers with common educational and administrative tasks. There is also experimental support for bulk marking of student work.
+It is a thin wrapper around OpenAI GPT-3.5-Turbo and GPT-4 with [pre-written prompts](/wwwroot/js/templates.js) to assist teachers with common educational and administrative tasks. There is also experimental support for bulk marking of student work.
 
 ![Preview of Teacher AI](preview.gif)
 

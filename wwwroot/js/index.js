@@ -104,7 +104,7 @@ $prompt.addEventListener('keypress', async function (e) {
 
 async function send(boost) {
   let message = removeWhitespace($prompt.value);
-  if (message.length === 0) return;
+  if (!boost && message.length === 0) return;
 
   if ((!template || !template.feedbackMode) && urlRegex.test(message)) {
     alert('The AI Assistant is unable to follow links. Please paste the contents of the web page.');

@@ -85,8 +85,8 @@ public static class AuthConfig
       return Results.Redirect("/auth/login");
     });
 
-    app.MapGet("/auth/authorise-service-account", [Authorize(Roles = Roles.Admin)] () => Results.Redirect(TokenAuthenticationProvider.AuthRedirectUrl));
-    app.MapGet("/auth/authorise-service-account/done", async ([FromQuery] string code) => {
+    app.MapGet("/auth/authorise-service-account", [AllowAnonymous] () => Results.Redirect(TokenAuthenticationProvider.AuthRedirectUrl));
+    app.MapGet("/auth/authorise-service-account/done", [AllowAnonymous] async ([FromQuery] string code) => {
       var refreshToken = await TokenAuthenticationProvider.GetRefreshTokenAsync(code);
       return Results.Ok(new { RefreshToken = refreshToken });
     });
