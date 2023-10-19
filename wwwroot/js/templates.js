@@ -10,9 +10,9 @@ const templates = [
         title: 'Plan a lesson',
         messages: [
           { text: 'What is the subject or course name?', hint: 'e.g. "geography"' },
-          { text: 'What are the learning objectives?', hint: 'By the end of this lesson, students will be able to...' }
+          { text: 'What is the learning objective?', hint: 'Finish the sentence: By the end of this lesson, students will be able to...' }
         ],
-        prompt: 'Plan a one-hour lesson for students in a UK secondary school. Design rich tasks and varied activities to get students thinking deeply. Individual and pair work are preferred instead of group work. Use the following structure, with detailed bullet points under each section:\n\n"""\n*Detailed lesson plan:*\n(Describe the lesson activities. When resources are used, just refer to them by number, e.g. (Resource 1). Do not write out the contents of the resource here. This will be written out in the next section.)\n\n* Retrieval practice\n* Awe and wonder\n* I do(explanation and modelling)\n* We do(co- construction and whole class questioning)\n* You do(individual practice)\n\n*I will now create each of these resources:*\n\n* Write the full text of each resource, don\'t just summarise it. Don\'t tell me to research or create my own resources. Create everything in full, using detailed paragraphs or bullet points.\n"""\n\nSubject: [0]\nLearning objectives: By the end of this lesson, students will be able to [1]\n\n*Detailed lesson plan:*',
+        prompt: 'Plan a one-hour lesson for students in a UK secondary school. Design rich tasks and varied activities to get students thinking deeply. Base the lesson around one or more deliberate practice activities, where students have to produce a piece of work individually.\n\nThe centrepiece must be a substantial deliberate practice activity, where students have to produce a piece of work to demonstrate that they have achieved the learning objective.\n\nWhen you write the lesson plan, use the following headings with detailed bullet points beneath each one:\n* Starter\n* Explanation and knowledge acquisition tasks\n* Modelling and success criteria (as part of this section, list the success criteria for the deliberate practice task and write out a model answer **in full** to a similar but not identical question, for the teacher to show students the expected standard)\n* Deliberate practice task\n* Review\n\nSubject: [0]\nLearning objective: By the end of this lesson, students will be able to [1]\n\n**Lesson plan:**:',
         temperature: 0.4,
         model: 'gpt-4'
       },
@@ -178,7 +178,7 @@ const templates = [
         title: 'Mark work for a whole class',
         feedbackMode: true,
         messages: [
-          { text: 'Where multiple students have answered an essay question, I can help you mark their work and write individual feedback.\n\nPlease note:\n\n* This quickly uses up credits, so be mindful of setting up your spreadsheet correctly and providing a clear, AI-friendly mark scheme first time.\n* Do not ask me to mark work on a sensitive topic (such as literature or history involving violence or suffering, or controversial religious or ethical themes). Topics like these are very likely to trigger the content filter and the marking will fail.\n* You are responsible for checking my feedback before sharing it with students.\n\nTo get started, go to [office.com](https://www.office.com) and set up an Excel spreadsheet in your OneDrive with the following columns. The first two data rows contain the question and mark scheme, and subsequent rows contain student responses. The easiest way to collect responses is by setting a single long-answer question on Google Forms or Microsoft Forms.\n\n| Name | Response | Mark | Evaluation | Feedback | T Task | SPaG |\n| :-- | :-- | :-- | :-- | :-- | :-- | :-- |\n| Question | *(Type the question)* | | | | | |\n| Mark scheme | *(AI-friendly mark scheme)* | | | | | |\n| (Student) | (Their answer) | | | | |\n| ... | ... | | | | | |\n\nClick "Share" > "Link to this Sheet" and paste the link below.' }
+          { text: 'Where multiple students have answered an essay question, I can help you mark their work and write individual feedback.\n\nPlease note:\n\n* This quickly uses up credits, so be mindful of setting up your spreadsheet correctly and providing a clear, AI-friendly mark scheme first time.\n* You are responsible for checking my feedback before sharing it with students.\n\nTo get started, create an Excel spreadsheet in your OneDrive with the following columns. The first two data rows contain the question and mark scheme, and subsequent rows contain student responses. The easiest way to collect responses is by setting a single long-answer question on Google Forms or Microsoft Forms.\n\n| Name | Response | Mark | Evaluation | Feedback | T Task | SPaG |\n| :-- | :-- | :-- | :-- | :-- | :-- | :-- |\n| Question | *(Type the question)* | | | | | |\n| Mark scheme | *(AI-friendly mark scheme)* | | | | | |\n| (Student) | (Their answer) | | | | |\n| ... | ... | | | | | |\n\nShare this sheet with SERVICE_ACCOUNT, then click Copy Link To This Sheet and paste the link below.' }
         ],
         model: 'gpt-4'
       }
@@ -231,9 +231,10 @@ const templates = [
         title: 'Write a student reference',
         messages: [
           { text: 'What is the student\'s first name?' },
+          { text: 'What is the student applying to study?', hint: 'e.g. "maths at university" or "engineering at college"' },
           { text: 'Summarise some of the student\'s qualities.' }
         ],
-        prompt: 'Write a reference for our student, [0].\n\nStudent qualities:\n[1]\n\nReference from teacher:',
+        prompt: 'Write a reference for our student, [0], who is applying to study [1]. Do not include any greeting, introduction, or sign-off; only write the main body of the reference. The reference should have a positive and professional tone, and support their application to further education.\n\nStudent qualities:\n[2]\n\nReference from teacher:',
         temperature: 0.2,
         model: 'gpt-4'
       }

@@ -27,6 +27,7 @@
     let credits = @remaining;
     const maxCredits = @Organisation.Instance.UserCreditsPerWeek;
     const adminName = '@Organisation.Instance.AdminName';
+    const serviceAccountEmail = '@Organisation.Instance.ServiceAccountEmail';
     const isAdmin = @User.IsInRole(Roles.Admin).ToString().ToLower();
   </script>
   <script src="/js/templates.js" asp-append-version="true"></script>

@@ -124,7 +124,6 @@ Output format:
             completionTokens = ChatGPT.CountCompletionTokens(response.Content);
             prompts.Add(new() { Role = "assistant", Content = response.Content });
           }
-          if (response.FinishReason == "stop") break;
         }
         finally
         {

@@ -26,6 +26,7 @@ It is a thin wrapper around OpenAI GPT-3.5-Turbo and GPT-4 with [pre-written pro
     * `Organisation__Name` - the name of your organisation
     * `Organisation__AdminName` - the name of the user who will administrate the Teacher AI app
     * `Organisation__AdminEmail` - the email address of the admin user
+    * `Organisation__ServiceAccountEmail` - the email address of the service account which will be used to access Excel spreadsheets
     * `Organisation__AppWebsite` - the URL where this app will be hosted
     * `Organisation__Domain` - your organisation's domain name
     * `Organisation__UserCreditsPerWeek` - the number of AI credits to assign each user per week

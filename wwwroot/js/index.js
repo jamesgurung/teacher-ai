@@ -54,7 +54,7 @@ $messages.addEventListener('click', async function (e) {
 
     const assistantBubble = document.createElement('div');
     assistantBubble.className = 'message assistant';
-    assistantBubble.innerHTML = marked.parse(template.messages[0].text);
+    assistantBubble.innerHTML = marked.parse(template.messages[0].text.replace(/SERVICE_ACCOUNT/g, serviceAccountEmail));
     if (template.messages[0].hint) {
       const hint = document.createElement('span');
       hint.textContent = template.messages[0].hint;
