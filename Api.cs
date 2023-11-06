@@ -32,9 +32,10 @@ public static class Api
       ChatGPTCompletion response = null;
       int promptTokens = ChatGPT.CountPromptTokens(chatRequest.Messages);
       int completionTokens = 0;
+      var model = OpenAIModel.Dictionary[chatRequest.Model];
       try
       {
-        var chat = new ChatGPT(httpClientFactory.CreateClient("OpenAI"), chatRequest.Model, hubContext.Clients, chatRequest.ConnectionId);
+        var chat = new ChatGPT(httpClientFactory.CreateClient("OpenAI"), model.Name, hubContext.Clients, chatRequest.ConnectionId);
         response = await chat.SendGptRequestStreamingAsync(chatRequest.Messages, chatRequest.Temperature, 0.95m, $"{ticks}");
         if (response.FinishReason != "prompt_filter" && response.FinishReason != "error") {
           completionTokens = ChatGPT.CountCompletionTokens(response.Content);
@@ -45,7 +46,6 @@ public static class Api
         await service.LogChatAsync(nameParts[0], chatRequest, ticks, promptTokens, completionTokens, GetFilterReason(response.FinishReason));
         #endif
       }
-      var model = OpenAIModel.Dictionary[chatRequest.Model];
       var thisUsage = promptTokens * model.CostPerPromptToken + completionTokens * model.CostPerCompletionToken;
 
       var data = new ChatResponse {
@@ -76,7 +76,8 @@ public static class Api
         return Results.Problem(exc.Message);
       }
 
-      var chat = new ChatGPT(httpClientFactory.CreateClient("OpenAI"), "gpt-4");
+      var gpt4modelName = OpenAIModel.Dictionary["gpt-4"].Name;
+      var chat = new ChatGPT(httpClientFactory.CreateClient("OpenAI"), gpt4modelName);
 
       var systemPrompt = new ChatGPTMessage
       {

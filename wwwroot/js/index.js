@@ -49,7 +49,7 @@ $messages.addEventListener('click', async function (e) {
     template.userInputs = [];
     const userBubble = document.createElement('div');
     userBubble.className = 'message user title' + (template.admin ? ' admin' : '');
-    userBubble.innerHTML = `<p>${template.title}${(template.model === 'gpt-4' && (credits / maxCredits) > 0.2 ? ' &#x1F680;' : '')}</p>`;
+    userBubble.innerHTML = `<p>${template.title}</p>`;
     $messages.appendChild(userBubble);
 
     const assistantBubble = document.createElement('div');
@@ -111,7 +111,7 @@ async function send(boost) {
     return;
   }
 
-  let model = boost ? 'gpt-4' : 'gpt-3.5-turbo';
+  let model = ((credits / maxCredits) > 0.2 || boost) ? 'gpt-4' : 'gpt-3.5-turbo';
   let showFollowUpHint = false;
 
   [...document.querySelectorAll('.boost,.hint')].forEach(o => o.remove());
@@ -327,7 +327,7 @@ function displayOptions() {
     if (template.admin && !isAdmin) continue;
     const $template = document.createElement('div');
     $template.className = 'option' + (template.admin ? ' admin' : '');
-    $template.innerHTML = `<p>${template.title}${(template.model === 'gpt-4' && (credits / maxCredits) > 0.2 ? ' &#x1F680;' : '')}</p>`;
+    $template.innerHTML = `<p>${template.title}</p>`;
     $template.dataset.id = template.id;
     $messages.appendChild($template);
   }

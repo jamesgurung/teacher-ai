@@ -19,7 +19,7 @@ builder.Services.AddRazorPages(options => { options.Conventions.AllowAnonymousTo
 
 Organisation.Instance = builder.Configuration.GetSection("Organisation").Get<Organisation>();
 var models = builder.Configuration.GetSection("OpenAI:Models").Get<List<OpenAIModel>>();
-OpenAIModel.Dictionary = models.ToDictionary(model => model.Name);
+OpenAIModel.Dictionary = models.ToDictionary(model => model.Key);
 TokenAuthenticationProvider.Configure(builder.Configuration["Azure:TenantId"], builder.Configuration["Azure:ClientId"],
   builder.Configuration["Azure:ClientSecret"], builder.Configuration["Azure:RefreshToken"]);
 await ChatGPT.CreateTokenizerAsync();

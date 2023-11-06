@@ -13,8 +13,7 @@ const templates = [
           { text: 'What is the learning objective?', hint: 'Finish the sentence: By the end of this lesson, students will be able to...' }
         ],
         prompt: 'Plan a one-hour lesson for students in a UK secondary school. Design rich tasks and varied activities to get students thinking deeply. Base the lesson around one or more deliberate practice activities, where students have to produce a piece of work individually.\n\nThe centrepiece must be a substantial deliberate practice activity, where students have to produce a piece of work to demonstrate that they have achieved the learning objective.\n\nWhen you write the lesson plan, use the following headings with detailed bullet points beneath each one:\n* Starter\n* Explanation and knowledge acquisition tasks\n* Modelling and success criteria (as part of this section, list the success criteria for the deliberate practice task and write out a model answer **in full** to a similar but not identical question, for the teacher to show students the expected standard)\n* Deliberate practice task\n* Review\n\nSubject: [0]\nLearning objective: By the end of this lesson, students will be able to [1]\n\n**Lesson plan:**:',
-        temperature: 0.4,
-        model: 'gpt-4'
+        temperature: 0.4
       },
 
       {
@@ -30,8 +29,7 @@ const templates = [
               { text: 'What is the question?' }
             ],
             prompt: 'Write a model answer to this [0] question:\n\n"""\n[1]\n"""\n\nWrite a model answer, for the level of students studying [0] in a UK secondary school. Write paragraphs of text, without bullet points.\n\nModel answer:',
-            temperature: 0.3,
-            model: 'gpt-4'
+            temperature: 0.3
           },
 
           {
@@ -43,8 +41,7 @@ const templates = [
               { text: 'Please enter the mark scheme.', hint: 'Only include level descriptors for the highest level.' }
             ],
             prompt: 'Write a model answer to this [0] question:\n\n"""\n[1]\n"""\n\nMark scheme:\n\n"""\n[2]\n"""\n\nWrite a model answer to score full marks, for the level of students studying [0] in a UK secondary school. Write paragraphs of text, without bullet points.\n\nQuestion: [1]\n\nModel answer:',
-            temperature: 0.3,
-            model: 'gpt-4'
+            temperature: 0.3
           },
 
           {
@@ -56,8 +53,7 @@ const templates = [
               { text: 'Please paste the text.' },
             ],
             prompt: 'Write a model answer to this [0] question:\n\n"""\n[1]\n"""\n\nThe question is based on this text:\n\n"""\n[2]\n"""\n\nWrite a model answer, based on the text, for the level of students studying [0] in a UK secondary school. Write paragraphs of text, without bullet points.\n\nQuestion: [1]\n\nModel answer:',
-            temperature: 0.3,
-            model: 'gpt-4'
+            temperature: 0.3
           },
 
         ]
@@ -76,8 +72,7 @@ const templates = [
               { text: 'What is the topic?' }
             ],
             prompt: 'Generate 10 [0] questions about [1]. These should be multiple-choice questions suitable for secondary school students. For each question, include one correct answer and three distractors which are incorrect and contain common misconceptions.\n\nOutput format:\n\n1. Question\n    a. Answer 1\n    b. Answer 2 [CORRECT]\n    c. Answer 3\n    d. Answer 4\n\nRandomise the positions of the correct answers.',
-            temperature: 0.2,
-            model: 'gpt-4'
+            temperature: 0.2
           },
 
           {
@@ -88,8 +83,7 @@ const templates = [
               { text: 'What is the topic?' }
             ],
             prompt: 'Generate 10 [0] questions about [1]. These should be short-answer questions suitable for secondary school students. Include the answers.\n\nOutput format:\n\n1. Question\n    * Answer',
-            temperature: 0.2,
-            model: 'gpt-4'
+            temperature: 0.2
           },
 
           {
@@ -99,8 +93,7 @@ const templates = [
               { text: 'Paste the text below.' }
             ],
             prompt: 'Read this text and write 10 comprehension questions for secondary school students, to test that they have understood the meaning. Include the answers.\n\nOutput format:\n\n1. Question\n    * Answer\n\nText:\n"""\n[0]\n"""\n\nComprehension questions:',
-            temperature: 0.2,
-            model: 'gpt-4'
+            temperature: 0.2
           }
 
         ]
@@ -114,8 +107,7 @@ const templates = [
           { text: 'What is the topic?' }
         ],
         prompt: 'Script a model explanation about "[1]", for students studying [0] in a UK secondary school. Tailor the explanation to this age group. Do not include a greeting, introduction, or goodbye. Explain the topic as clearly as possible, using analogies, examples, or links to existing knowledge where appropriate.\n\nTopic:\n[1]\n\nTeacher\'s explanation:',
-        temperature: 0.3,
-        model: 'gpt-4'
+        temperature: 0.3
       },
 
       {
@@ -155,8 +147,7 @@ const templates = [
           { text: 'Please paste the student\'s response.' },
         ],
         prompt: 'Write detailed feedback on this response to the [0] question:\n"""\n[1]\n"""\n\nStudent response:\n"""\n[2]\n"""\n\nYou will give feedback in the format:\n"""\nFEEDBACK:\nStrengths:\n\n* Detailed bullet points\n\nAreas to develop:\n\n* Detailed bullet points\n"""\n\nFEEDBACK:',
-        temperature: 0,
-        model: 'gpt-4'
+        temperature: 0
       },
 
       {
@@ -169,8 +160,7 @@ const templates = [
           { text: 'Please paste the student\'s response.' },
         ],
         prompt: 'You are going to mark a student\'s response to this [0] question:\n"""\n[1]\n"""\n\nMark scheme:\n"""\n[2]\n"""\n\nStudent response:\n"""\n[3]\n"""\n\nYou will give feedback in the format:\n"""\nFEEDBACK:\nStrengths:\n\n* Detailed bullet points\n\nAreas to develop:\n\n* Detailed bullet points\n\nMark: X/X\n"""\n\nFEEDBACK:',
-        temperature: 0,
-        model: 'gpt-4'
+        temperature: 0
       },
 
       {
@@ -179,8 +169,7 @@ const templates = [
         feedbackMode: true,
         messages: [
           { text: 'Where multiple students have answered an essay question, I can help you mark their work and write individual feedback.\n\nPlease note:\n\n* This quickly uses up credits, so be mindful of setting up your spreadsheet correctly and providing a clear, AI-friendly mark scheme first time.\n* You are responsible for checking my feedback before sharing it with students.\n\nTo get started, create an Excel spreadsheet in your OneDrive with the following columns. The first two data rows contain the question and mark scheme, and subsequent rows contain student responses. The easiest way to collect responses is by setting a single long-answer question on Google Forms or Microsoft Forms.\n\n| Name | Response | Mark | Evaluation | Feedback | T Task | SPaG |\n| :-- | :-- | :-- | :-- | :-- | :-- | :-- |\n| Question | *(Type the question)* | | | | | |\n| Mark scheme | *(AI-friendly mark scheme)* | | | | | |\n| (Student) | (Their answer) | | | | |\n| ... | ... | | | | | |\n\nShare this sheet with SERVICE_ACCOUNT, then click Copy Link To This Sheet and paste the link below.' }
-        ],
-        model: 'gpt-4'
+        ]
       }
 
     ]
@@ -235,8 +224,7 @@ const templates = [
           { text: 'Summarise some of the student\'s qualities.' }
         ],
         prompt: 'Write a reference for our student, [0], who is applying to study [1]. Do not include any greeting, introduction, or sign-off; only write the main body of the reference. The reference should have a positive and professional tone, and support their application to further education.\n\nStudent qualities:\n[2]\n\nReference from teacher:',
-        temperature: 0.2,
-        model: 'gpt-4'
+        temperature: 0.2
       }
 
     ]
@@ -276,8 +264,7 @@ const templates = [
           { text: 'Please paste the person specification.' }
         ],
         prompt: '# Job title:\n\n[0]\n\n# Application letter:\n\n[1]\n\n# Person specification:\n\n[2]\n\n# Task:\n\nCreate a table with three columns:\n\n| Criterion | Evidence | Explanation |\n| :-- | :-- | :-- |\n\nFor each point in the person specification, indicate whether this is evidenced in the covering letter (Strong, Limited, or None). Explain your reasoning.',
-        temperature: 0,
-        model: 'gpt-4'
+        temperature: 0
       }
 
     ]
