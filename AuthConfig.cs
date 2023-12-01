@@ -35,15 +35,15 @@ public static class AuthConfig
       {
         o.Authority = $"https://login.microsoftonline.com/{builder.Configuration["Azure:TenantId"]}/v2.0/";
         o.ClientId = builder.Configuration["Azure:ClientId"];
-        o.ClientSecret = builder.Configuration["Azure:ClientSecret"];
         o.ResponseType = OpenIdConnectResponseType.IdToken;
+        o.Scope.Add("profile");
         o.Events = new()
         {
           OnTicketReceived = context =>
           {
-            var email = context.Principal.Claims.FirstOrDefault(c => c.Type == "preferred_username").Value.ToLowerInvariant();
-            var emailParts = email.Split('@');
-            if (!string.Equals(emailParts[1], Organisation.Instance.Domain, StringComparison.OrdinalIgnoreCase) || char.IsDigit(emailParts[0].Last()))
+            var email = context.Principal.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Upn).Value.ToLowerInvariant();
+            var emailParts = email?.Split('@');
+            if (email is null || !string.Equals(emailParts[1], Organisation.Instance.Domain, StringComparison.OrdinalIgnoreCase) || char.IsDigit(emailParts[0].Last()))
             {
               context.Response.Redirect("/auth/denied");
               context.HandleResponse();

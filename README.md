@@ -18,6 +18,7 @@ It is a thin wrapper around OpenAI GPT-3.5-Turbo and GPT-4 with [pre-written pro
     * Allow public client flows - `Yes`
     * Client secrets - create a new secret and save the key
     * API permissions - `Microsoft Graph - User.Read` and `Microsoft Graph - Files.ReadWrite.All`
+    * Token configuration - add optional claim of type `ID`: `upn`
 
 3. Create an OpenAI account.
 
