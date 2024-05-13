@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.SignalR;
-using Microsoft.DeepDev;
 using System.Net;
 using System.Text;
 using System.Text.Json;
@@ -9,12 +8,6 @@ namespace TeacherAI;
 
 public class ChatGPT(HttpClient client, string model, IHubClients<IChatClient> hub = null, string chatId = null)
 {
-  public static async Task CreateTokenizerAsync() {
-    _tokenizer = await TokenizerBuilder.CreateByEncoderNameAsync("cl100k_base");
-  }  
-
-  private static ITokenizer _tokenizer;
-
   public async Task<ChatGPTCompletion> SendGptRequestStreamingAsync(IList<ChatGPTMessage> prompts, decimal temperature, decimal topP, string identifier) {
     var request = new ChatGPTRequest
     {
@@ -23,6 +16,7 @@ public class ChatGPT(HttpClient client, string model, IHubClients<IChatClient> h
       TopP = topP,
       Choices = 1,
       Stream = true,
+      StreamOptions = new() { IncludeUsage = true },
       Messages = prompts,
       Model = model
     };
@@ -36,18 +30,24 @@ public class ChatGPT(HttpClient client, string model, IHubClients<IChatClient> h
     using var reader = new StreamReader(stream);
     var content = new StringBuilder();
     string finishReason = null;
+    var promptTokens = 0;
+    var completionTokens = 0;
     while (!reader.EndOfStream)
     {
       var line = await reader.ReadLineAsync();
       if (string.IsNullOrEmpty(line) || !line.StartsWith("data: ", StringComparison.Ordinal)) continue;
       if (line == "data: [DONE]") break;
       var chunk = JsonSerializer.Deserialize<ChatGPTResponseChunk>(line[6..]);
+      if (chunk?.Usage is not null) {
+        promptTokens = chunk.Usage.PromptTokens;
+        completionTokens = chunk.Usage.CompletionTokens;
+      }
       if (chunk?.FinishReason is not null) finishReason = chunk.FinishReason;
       if (chunk?.Value is null) continue;
       content.Append(chunk.Value);
       if (hub is not null) await hub.Client(chatId).Type(chunk.Value);
     }
-    return new() { Content = content.ToString(), FinishReason = finishReason };
+    return new() { Content = content.ToString(), FinishReason = finishReason, PromptTokens = promptTokens, CompletionTokens = completionTokens };
   }
 
   public async Task<ChatGPTCompletion> SendGptRequestAsync(IList<ChatGPTMessage> prompts, decimal temperature, decimal topP, string identifier)
@@ -69,10 +69,6 @@ public class ChatGPT(HttpClient client, string model, IHubClients<IChatClient> h
     var data = JsonSerializer.Deserialize<ChatGPTResponse>(await response.Content.ReadAsStringAsync());    
     return new() { Content = data.Value, FinishReason = data.FinishReason };
   }
-
-  private static readonly string[] _emptyArray = [];
-  public static int CountPromptTokens(IList<ChatGPTMessage> prompts) => prompts.Sum(o => _tokenizer.Encode(o.Content, _emptyArray).Count + 5) + 3;
-  public static int CountCompletionTokens(string completion) => _tokenizer.Encode(completion, _emptyArray).Count + 1;
 }
 
 public class ChatGPTRequest
@@ -91,6 +87,14 @@ public class ChatGPTRequest
   public bool Stream { get; set; }
   [JsonPropertyName("model")]
   public string Model { get; set; }
+  [JsonPropertyName("stream_options")]
+  public StreamOptions StreamOptions { get; set; }
+}
+
+public class StreamOptions
+{
+  [JsonPropertyName("include_usage")]
+  public bool IncludeUsage { get; set; }
 }
 
 public class ChatGPTMessage
@@ -128,10 +132,21 @@ public class ChatGPTResponseChunk
   public IList<ChatGPTResponseChunkChoice> Choices { get; set; }
 
   [JsonIgnore]
-  public string Value => Choices?[0].Delta?.Content;
+  public string Value => Choices is null || Choices.Count == 0 ? null : Choices[0].Delta?.Content;
 
   [JsonIgnore]
-  public string FinishReason => Choices?[0].FinishReason;
+  public string FinishReason => Choices is null || Choices.Count == 0 ? null : Choices[0].FinishReason;
+
+  [JsonPropertyName("usage")]
+  public UsageData Usage { get; set; }
+}
+
+public class UsageData
+{
+  [JsonPropertyName("prompt_tokens")]
+  public int PromptTokens { get; set; }
+  [JsonPropertyName("completion_tokens")]
+  public int CompletionTokens { get; set; }
 }
 
 public class ChatGPTResponseChunkChoice
@@ -152,4 +167,6 @@ public class ChatGPTResponseMessage
 public class ChatGPTCompletion {
   public string Content { get; set; }
   public string FinishReason { get; set; }
+  public int PromptTokens { get; set; }
+  public int CompletionTokens { get; set; }
 }

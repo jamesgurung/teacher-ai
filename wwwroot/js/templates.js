@@ -71,7 +71,7 @@ const templates = [
               { text: 'What is the subject or course name?', hint: 'e.g. "geography"' },
               { text: 'What is the topic?' }
             ],
-            prompt: 'Generate 10 [0] questions about [1]. These should be multiple-choice questions suitable for secondary school students. For each question, include one correct answer and three distractors which are incorrect and contain common misconceptions.\n\nOutput format:\n\n1. Question\n    a. Answer 1\n    b. Answer 2 [CORRECT]\n    c. Answer 3\n    d. Answer 4\n\nRandomise the positions of the correct answers.',
+            prompt: 'Generate 10 [0] questions about [1]. These should be multiple-choice questions suitable for secondary school students. For each question, include one correct answer and three distractors which are incorrect and contain common misconceptions. Randomise the positions of the correct answers (sometimes a, sometimes b, sometimes c, sometimes d).\n\nOutput format:\n\n1. Question\n    a. Answer 1\n    b. Answer 2\n    c. Answer 3\n    d. Answer 4\n\n After all the questions, list the answers.',
             temperature: 0.2
           },
 
@@ -82,7 +82,7 @@ const templates = [
               { text: 'What is the subject or course name?', hint: 'e.g. "GCSE English Literature"' },
               { text: 'What is the topic?' }
             ],
-            prompt: 'Generate 10 [0] questions about [1]. These should be short-answer questions suitable for secondary school students. Include the answers.\n\nOutput format:\n\n1. Question\n    * Answer',
+            prompt: 'Generate 10 [0] questions about [1]. These should be short-answer questions suitable for secondary school students. After all the questions, list the answers.',
             temperature: 0.2
           },
 

@@ -22,7 +22,6 @@ var models = builder.Configuration.GetSection("OpenAI:Models").Get<List<OpenAIMo
 OpenAIModel.Dictionary = models.ToDictionary(model => model.Key);
 TokenAuthenticationProvider.Configure(builder.Configuration["Azure:TenantId"], builder.Configuration["Azure:ClientId"],
   builder.Configuration["Azure:ClientSecret"], builder.Configuration["Azure:RefreshToken"]);
-await ChatGPT.CreateTokenizerAsync();
 
 builder.Services.AddHttpClient("OpenAI", options => {
   options.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", builder.Configuration["OpenAI:Key"]);

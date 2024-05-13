@@ -47,7 +47,7 @@ public class TableService(string domain)
     var end = $"{username}_{DateTime.UtcNow.AddDays(1).Ticks}";
     var results = await table.QueryAsync<ChatLog>(
       filter: o => o.PartitionKey == domain && o.RowKey.CompareTo(start) >= 0 && o.RowKey.CompareTo(end) < 0,
-      select: new[] { nameof(ChatLog.PromptTokens), nameof(ChatLog.CompletionTokens), nameof(ChatLog.Model) }
+      select: [nameof(ChatLog.PromptTokens), nameof(ChatLog.CompletionTokens), nameof(ChatLog.Model)]
     ).ToListAsync();
     return results
       .Select(o => new { Chat = o, Model = OpenAIModel.Dictionary[o.Model] })
@@ -60,7 +60,7 @@ public class TableService(string domain)
     var start = DateTime.UtcNow.AddDays(-days);
     var results = await table.QueryAsync<ChatLog>(
       filter: o => o.PartitionKey == domain && o.Timestamp >= start && o.Model != "credits",
-      select: new[] { nameof(ChatLog.RowKey), nameof(ChatLog.PromptTokens), nameof(ChatLog.CompletionTokens), nameof(ChatLog.Model) }
+      select: [nameof(ChatLog.RowKey), nameof(ChatLog.PromptTokens), nameof(ChatLog.CompletionTokens), nameof(ChatLog.Model)]
     ).ToListAsync();
     return results
       .Select(o => new { Chat = o, Ticks = long.Parse(o.RowKey.Split('_')[1], CultureInfo.InvariantCulture), Model = OpenAIModel.Dictionary[o.Model] })

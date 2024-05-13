@@ -30,29 +30,26 @@ public static class Api
         $"It is {DateTime.UtcNow:d MMM yyyy}."
       });
       ChatGPTCompletion response = null;
-      int promptTokens = ChatGPT.CountPromptTokens(chatRequest.Messages);
-      int completionTokens = 0;
       var model = OpenAIModel.Dictionary[chatRequest.Model];
       try
       {
         var chat = new ChatGPT(httpClientFactory.CreateClient("OpenAI"), model.Name, hubContext.Clients, chatRequest.ConnectionId);
         response = await chat.SendGptRequestStreamingAsync(chatRequest.Messages, chatRequest.Temperature, 0.95m, $"{ticks}");
         if (response.FinishReason != "prompt_filter" && response.FinishReason != "error") {
-          completionTokens = ChatGPT.CountCompletionTokens(response.Content);
           chatRequest.Messages.Add(new() { Role = "assistant", Content = response.Content });
         }
       } finally {
         #if !DEBUG
-        await service.LogChatAsync(nameParts[0], chatRequest, ticks, promptTokens, completionTokens, GetFilterReason(response.FinishReason));
+        await service.LogChatAsync(nameParts[0], chatRequest, ticks, response?.PromptTokens ?? 0, response?.CompletionTokens ?? 0, GetFilterReason(response.FinishReason));
         #endif
       }
-      var thisUsage = promptTokens * model.CostPerPromptToken + completionTokens * model.CostPerCompletionToken;
+      var thisUsage = response.PromptTokens * model.CostPerPromptToken + response.CompletionTokens * model.CostPerCompletionToken;
 
       var data = new ChatResponse {
         Response = response.Content,
         FinishReason = response.FinishReason,
         RemainingCredits = Math.Max((int)Math.Round(remainingCredits - thisUsage, 0, MidpointRounding.AwayFromZero), 0),
-        Stop = promptTokens + completionTokens > 3200 || response.FinishReason != "stop"
+        Stop = response.PromptTokens + response.CompletionTokens > (chatRequest.Model == "gpt-4" ? 10000 : 3200) || response.FinishReason != "stop"
       };
       return Results.Ok(data);
     });
@@ -113,8 +110,6 @@ Output format:
         };
         var prompts = new List<ChatGPTMessage>() { systemPrompt, userPrompt };
         ChatGPTCompletion response = null;
-        int promptTokens = ChatGPT.CountPromptTokens(prompts);
-        int completionTokens = 0;
         var ticks = DateTime.UtcNow.Ticks;
 
         try
@@ -122,7 +117,6 @@ Output format:
           response = await chat.SendGptRequestAsync(prompts, 0.0m, 0.0m, $"{ticks}");
           if (response.FinishReason != "prompt_filter" && response.FinishReason != "error")
           {
-            completionTokens = ChatGPT.CountCompletionTokens(response.Content);
             prompts.Add(new() { Role = "assistant", Content = response.Content });
           }
         }
@@ -138,7 +132,7 @@ Output format:
               Model = "gpt-4",
               TemplateId = "feedback-spreadsheet"
             };
-            await service.LogChatAsync(nameParts[0], chatRequest, ticks, promptTokens, completionTokens, GetFilterReason(response.FinishReason));
+            await service.LogChatAsync(nameParts[0], chatRequest, ticks, response?.PromptTokens ?? 0, response?.CompletionTokens ?? 0, GetFilterReason(response.FinishReason));
           }
         }
 
