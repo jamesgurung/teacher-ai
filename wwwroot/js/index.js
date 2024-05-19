@@ -13,11 +13,12 @@ let incomingMessage;
 let typing = false;
 let template = null;
 let templateStage = 1;
-let templateId;
+let templateId = 'open';
 let currentTemplates = templates;
-let temperature;
+let temperature = 0.4;
 let adminMode = false;
 let feedbackMode = false;
+let optionsShown = true;
 
 const connection = new signalR.HubConnectionBuilder().withUrl('/chat').withAutomaticReconnect().build();
 connection.start();
@@ -38,10 +39,12 @@ $messages.addEventListener('click', async function (e) {
   if (e.target.classList.contains('option') || e.target.parentNode.classList.contains('option'))
   {
     template = currentTemplates.find(o => o.id === (e.target.dataset.id ?? e.target.parentNode.dataset.id));
-    [...$messages.getElementsByClassName('option')].forEach(o => o.remove());
+    [...$messages.getElementsByClassName('option'), ...$messages.getElementsByClassName('initial-option')].forEach(o => o.remove());
+    optionsShown = false;
 
     if (template.templates) {
       currentTemplates = template.templates;
+      $prompt.disabled = true;
       displayOptions();
       return;
     }
@@ -95,6 +98,10 @@ adjustHeight();
 
 $prompt.addEventListener('keypress', async function (e) {
   const key = e.which || e.keyCode;
+  if (optionsShown) {
+    [...$messages.getElementsByClassName('option'), ...$messages.getElementsByClassName('initial-option')].forEach(o => o.remove());
+    optionsShown = false;
+  }
   if (key === 13 && !e.shiftKey && $prompt.value) {
     await send();
     e.preventDefault();
@@ -273,6 +280,7 @@ async function send(boost) {
     $messages.scrollTop = $messages.scrollHeight;
   }
 }
+$prompt.focus();
 
 connection.on('Type', function (token) {
   if (!typing) return;
@@ -331,6 +339,7 @@ function displayOptions() {
     $template.dataset.id = template.id;
     $messages.appendChild($template);
   }
+  optionsShown = true;
 }
 
 function removeWhitespace(str) {

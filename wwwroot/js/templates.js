@@ -12,7 +12,7 @@ const templates = [
           { text: 'What is the subject or course name?', hint: 'e.g. "geography"' },
           { text: 'What is the learning objective?', hint: 'Finish the sentence: By the end of this lesson, students will be able to...' }
         ],
-        prompt: 'Plan a one-hour lesson for students in a UK secondary school. Design rich tasks and varied activities to get students thinking deeply. Base the lesson around one or more deliberate practice activities, where students have to produce a piece of work individually.\n\nThe centrepiece must be a substantial deliberate practice activity, where students have to produce a piece of work to demonstrate that they have achieved the learning objective.\n\nWhen you write the lesson plan, use the following headings with detailed bullet points beneath each one:\n* Starter\n* Explanation and knowledge acquisition tasks\n* Modelling and success criteria (as part of this section, list the success criteria for the deliberate practice task and write out a model answer **in full** to a similar but not identical question, for the teacher to show students the expected standard)\n* Deliberate practice task\n* Review\n\nSubject: [0]\nLearning objective: By the end of this lesson, students will be able to [1]\n\n**Lesson plan:**:',
+        prompt: 'Plan a one-hour lesson for students in a UK secondary school. Design rich tasks and varied activities to get students thinking deeply. Start with engaging knowledge acquisition tasks, culminating in a substantial deliberate practice activity where students have to produce a piece of work to demonstrate that they have achieved the learning objective.\n\nWhen you write the lesson plan, use the following headings with detailed bullet points beneath each one:\n* Starter\n* Explanation and knowledge acquisition tasks\n* Modelling and success criteria\n* Deliberate practice task (include a model answer which meets all the success criteria)\n* Review\n\nSubject: [0]\nLearning objective: By the end of this lesson, students will be able to [1]\n\n**Lesson plan:**:',
         temperature: 0.4
       },
 
@@ -25,10 +25,9 @@ const templates = [
             id: 'plan-model-answer',
             title: 'Write a model answer',
             messages: [
-              { text: 'What is the subject or course name?', hint: 'e.g. "GCSE French"' },
               { text: 'What is the question?' }
             ],
-            prompt: 'Write a model answer to this [0] question:\n\n"""\n[1]\n"""\n\nWrite a model answer, for the level of students studying [0] in a UK secondary school. Write paragraphs of text, without bullet points.\n\nModel answer:',
+            prompt: 'Answer this question:\n\n"""\n[1]\n"""\n\nWrite a model answer, appropriate for students in a UK secondary school. Write paragraphs of text without bullet points.\n\nModel answer:',
             temperature: 0.3
           },
 
@@ -36,11 +35,10 @@ const templates = [
             id: 'plan-model-answer-with-ms',
             title: 'Model answer using a mark scheme',
             messages: [
-              { text: 'What is the subject or course name?', hint: 'e.g. "GCSE French"' },
               { text: 'What is the question?' },
               { text: 'Please enter the mark scheme.', hint: 'Only include level descriptors for the highest level.' }
             ],
-            prompt: 'Write a model answer to this [0] question:\n\n"""\n[1]\n"""\n\nMark scheme:\n\n"""\n[2]\n"""\n\nWrite a model answer to score full marks, for the level of students studying [0] in a UK secondary school. Write paragraphs of text, without bullet points.\n\nQuestion: [1]\n\nModel answer:',
+            prompt: 'Answer this question:\n\n"""\n[0]\n"""\n\nMark scheme:\n\n"""\n[1]\n"""\n\nWrite a model answer to score full marks, appropriate for students in a UK secondary school. Write paragraphs of text without bullet points.\n\nModel answer:',
             temperature: 0.3
           },
 
@@ -48,11 +46,10 @@ const templates = [
             id: 'plan-model-answer-text-based',
             title: 'Model answer based on reading a text',
             messages: [
-              { text: 'What is the subject or course name?', hint: 'e.g. "GCSE English Language"' },
+              { text: 'First, please paste the text.' },
               { text: 'What is the question?' },
-              { text: 'Please paste the text.' },
             ],
-            prompt: 'Write a model answer to this [0] question:\n\n"""\n[1]\n"""\n\nThe question is based on this text:\n\n"""\n[2]\n"""\n\nWrite a model answer, based on the text, for the level of students studying [0] in a UK secondary school. Write paragraphs of text, without bullet points.\n\nQuestion: [1]\n\nModel answer:',
+            prompt: 'Answer this question:\n\n"""\n[1]\n"""\n\nThe question is based on this text:\n\n"""\n[0]\n"""\n\nWrite a model answer, based on the text, appropriate for students in a UK secondary school. Write paragraphs of text without bullet points.\n\nQuestion: [1]\n\nModel answer:',
             temperature: 0.3
           },
 
@@ -68,10 +65,9 @@ const templates = [
             id: 'plan-questions-multiple-choice',
             title: 'Generate multiple choice questions',
             messages: [
-              { text: 'What is the subject or course name?', hint: 'e.g. "geography"' },
               { text: 'What is the topic?' }
             ],
-            prompt: 'Generate 10 [0] questions about [1]. These should be multiple-choice questions suitable for secondary school students. For each question, include one correct answer and three distractors which are incorrect and contain common misconceptions. Randomise the positions of the correct answers (sometimes a, sometimes b, sometimes c, sometimes d).\n\nOutput format:\n\n1. Question\n    a. Answer 1\n    b. Answer 2\n    c. Answer 3\n    d. Answer 4\n\n After all the questions, list the answers.',
+            prompt: 'Generate 10 questions about [0]. These should be multiple-choice questions suitable for secondary school students. For each question, include one correct answer and three distractors which are incorrect and contain common misconceptions. Randomise the positions of the correct answers (sometimes a, sometimes b, sometimes c, sometimes d).\n\nOutput format:\n\n1. Question\n    a. Answer 1\n    b. Answer 2\n    c. Answer 3\n    d. Answer 4\n\n After all the questions, list the answers.',
             temperature: 0.2
           },
 
@@ -79,10 +75,9 @@ const templates = [
             id: 'plan-questions-short-answer',
             title: 'Generate short answer questions',
             messages: [
-              { text: 'What is the subject or course name?', hint: 'e.g. "GCSE English Literature"' },
               { text: 'What is the topic?' }
             ],
-            prompt: 'Generate 10 [0] questions about [1]. These should be short-answer questions suitable for secondary school students. After all the questions, list the answers.',
+            prompt: 'Generate 10 questions about [0]. These should be short-answer questions suitable for secondary school students. After all the questions, list the answers.',
             temperature: 0.2
           },
 
@@ -103,10 +98,9 @@ const templates = [
         id: 'plan-explanation',
         title: 'Script an explanation',
         messages: [
-          { text: 'What is the subject or course name?', hint: 'e.g. "A-Level Psychology"' },
           { text: 'What is the topic?' }
         ],
-        prompt: 'Script a model explanation about "[1]", for students studying [0] in a UK secondary school. Tailor the explanation to this age group. Do not include a greeting, introduction, or goodbye. Explain the topic as clearly as possible, using analogies, examples, or links to existing knowledge where appropriate.\n\nTopic:\n[1]\n\nTeacher\'s explanation:',
+        prompt: 'Script a model explanation about "[0]", appropriate for students in a UK secondary school. Tailor the explanation to this age group. Do not include a greeting, introduction, or goodbye. Explain the topic as clearly as possible, using analogies, examples, or links to existing knowledge where appropriate.\n\nTopic:\n[0]\n\nTeacher\'s explanation:',
         temperature: 0.3
       },
 
@@ -114,10 +108,9 @@ const templates = [
         id: 'plan-vocab',
         title: 'List Tier 3 vocabulary for a topic',
         messages: [
-          { text: 'What is the subject or course name?', hint: 'e.g. "GCSE Business"' },
           { text: 'What is the topic?' }
         ],
-        prompt: 'List some common Tier 3 vocabulary words related to the topic of "[1]". These should be subject-specific words that are appropriate for secondary school students to learn when studying [0].\n\nOutput format:\n\n1. Word\n    * Definition: ...\n    * Usage in a sentence: ...',
+        prompt: 'List some common Tier 3 vocabulary words related to the topic of "[0]". These should be subject-specific words that are appropriate for secondary school students.\n\nOutput format:\n\n1. Word\n    * Definition: ...\n    * Usage in a sentence: ...',
         temperature: 0.2
       },
 
@@ -127,7 +120,7 @@ const templates = [
         messages: [
           { text: 'What is the topic?' }
         ],
-        prompt: 'Write a long, interesting, and informative text about the topic of "[0]".',
+        prompt: 'Write a long, interesting, and informative text about "[0]". Use paragraphs. Do not use subheadings or bullet points.',
         temperature: 0.5
       }
 
@@ -268,16 +261,6 @@ const templates = [
       }
 
     ]
-  },
-
-  {
-    id: 'open',
-    title: 'Other',
-    messages: [
-      { text: 'How can I help?' }
-    ],
-    prompt: '[0]',
-    temperature: 0.4
   },
 
   {

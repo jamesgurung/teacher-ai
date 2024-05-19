@@ -9,7 +9,7 @@ body {
   background-color: #eee;
   padding: 12px 12px;
   color: #222;
-  max-width: 720px;
+  max-width: 1080px;
 }
 
 header {
@@ -214,6 +214,14 @@ pre {
 
 .option.admin:hover {
   background-color: #ffc7c7;
+}
+
+.initial-option {
+  padding: 0 12px;
+  display: inline-block;
+  margin-bottom: 6px;
+  margin-right: 6px;
+  line-height: 22px;
 }
 
 ol, ul {
