@@ -27,7 +27,7 @@ const templates = [
             messages: [
               { text: 'What is the question?' }
             ],
-            prompt: 'Answer this question:\n\n"""\n[1]\n"""\n\nWrite a model answer, appropriate for students in a UK secondary school. Write paragraphs of text without bullet points.\n\nModel answer:',
+            prompt: 'Answer this question:\n\n"""\n[0]\n"""\n\nWrite a model answer, appropriate for students in a UK secondary school. Write paragraphs of text without bullet points.\n\nModel answer:',
             temperature: 0.3
           },
 
