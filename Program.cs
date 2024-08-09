@@ -19,7 +19,7 @@ builder.Services.AddRazorPages(options => { options.Conventions.AllowAnonymousTo
 
 Organisation.Instance = builder.Configuration.GetSection("Organisation").Get<Organisation>();
 var models = builder.Configuration.GetSection("OpenAI:Models").Get<List<OpenAIModel>>();
-OpenAIModel.Dictionary = models.ToDictionary(model => model.Key);
+OpenAIModel.Dictionary = models.ToDictionary(model => model.Type);
 TokenAuthenticationProvider.Configure(builder.Configuration["Azure:TenantId"], builder.Configuration["Azure:ClientId"],
   builder.Configuration["Azure:ClientSecret"], builder.Configuration["Azure:RefreshToken"]);
 
@@ -28,7 +28,6 @@ builder.Services.AddHttpClient("OpenAI", options => {
   options.BaseAddress = new Uri("https://api.openai.com/v1/chat/completions");
   options.Timeout = TimeSpan.FromMinutes(10);
 });
-OpenAIModel.Dictionary.Add("credits", new() { Name = "credits", CostPerPromptToken = -1.0m });
 
 builder.Services.AddSignalR();
 

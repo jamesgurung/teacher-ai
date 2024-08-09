@@ -2,7 +2,7 @@
 
 This is a web app which allows teachers to submit prompts to OpenAI models.
 
-It is a thin wrapper around OpenAI GPT-3.5-Turbo and GPT-4 with [pre-written prompts](/wwwroot/js/templates.js) to assist teachers with common educational and administrative tasks. There is also experimental support for bulk marking of student work.
+It is a thin wrapper around OpenAI GPT-4o with [pre-written prompts](/wwwroot/js/templates.js) to assist teachers with common educational and administrative tasks. There is also experimental support for bulk marking of student work.
 
 ![Preview of Teacher AI](preview.gif)
 
@@ -37,9 +37,14 @@ It is a thin wrapper around OpenAI GPT-3.5-Turbo and GPT-4 with [pre-written pro
     * `Azure__StorageAccountName` - the name of your Azure Storage account
     * `Azure__StorageAccountKey` - the key for your Azure Storage account
     * `OpenAI__Key` - the API key for your OpenAI account
-    * `OpenAI__Models__0__Name` - the name of the first OpenAI model which can be used by the app (subsequent models can be set up by adding additional items with incrementing indices); the expected model names are `gpt-3.5-turbo` and `gpt-4`
-    * `OpenAI__Models__0__CostPerPromptToken` - the credit cost per prompt token for the first model
-    * `OpenAI__Models__0__CostPerCompletionToken` - the credit cost per completion token for the first model
+    * `OpenAI__Models__0__Type` - set to `small`
+    * `OpenAI__Models__0__Name` - the name of the small OpenAI model to use, e.g. `gpt-4o-mini`
+    * `OpenAI__Models__0__CostPerPromptToken` - the credit cost per prompt token for the small model
+    * `OpenAI__Models__0__CostPerCompletionToken` - the credit cost per completion token for the small model
+    * `OpenAI__Models__1__Type` - set to `default`
+    * `OpenAI__Models__1__Name` - the name of the default OpenAI model to use, e.g. `gpt-4o`
+    * `OpenAI__Models__1__CostPerPromptToken` - the credit cost per prompt token for the default model
+    * `OpenAI__Models__1__CostPerCompletionToken` - the credit cost per completion token for the default model
  
 5. Authorise a service account, which the app will use to access Excel spreadsheets when they are shared on OneDrive.
 

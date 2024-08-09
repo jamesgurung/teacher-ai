@@ -118,7 +118,7 @@ async function send(boost) {
     return;
   }
 
-  let model = ((credits / maxCredits) > 0.2 || boost) ? 'gpt-4' : 'gpt-3.5-turbo';
+  let modelType = ((credits / maxCredits) > 0.2 || boost) ? 'default' : 'small';
   let showFollowUpHint = false;
 
   [...document.querySelectorAll('.boost,.hint')].forEach(o => o.remove());
@@ -159,7 +159,6 @@ async function send(boost) {
 
     if (template) {
       message = template.prompt?.replace(/\[([0-9]+)\]/g, (_, index) => template.userInputs[index]) ?? message;
-      if (template.model && (credits / maxCredits) > 0.2) model = template.model;
       temperature = template.temperature;
       templateId = template.id;
       if (template.admin) adminMode = true;
@@ -170,7 +169,7 @@ async function send(boost) {
 
     if (feedbackMode) {
       $response = document.createElement('div');
-      $response.className = 'message assistant full-width' + (model === 'gpt-4' ? ' boosted' : '');
+      $response.className = 'message assistant full-width' + (modelType === 'default' ? ' boosted' : '');
       $response.innerHTML = '<p class="status">Opening spreadsheet...</p><p><div class="progress"><div></div></div></p>'
       $messages.appendChild($response);
       $messages.scrollTop = $messages.scrollHeight;
@@ -205,7 +204,7 @@ async function send(boost) {
     }
 
     $response = document.createElement('div');
-    $response.className = 'message assistant' + (model === 'gpt-4' ? ' boosted' : '');
+    $response.className = 'message assistant' + (modelType === 'default' ? ' boosted' : '');
     $response.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>'
     $messages.appendChild($response);
     $messages.scrollTop = $messages.scrollHeight;
@@ -228,7 +227,7 @@ async function send(boost) {
     const resp = await request('/api/chat', 'POST', {
       messages: chat,
       temperature: temperature,
-      model: model,
+      modelType: modelType,
       templateId: templateId,
       conversationId: conversationId,
       connectionId: connection.connectionId
@@ -254,7 +253,7 @@ async function send(boost) {
       }
       $response.appendChild($issue);
     }
-    if (model === 'gpt-3.5-turbo' && data.remainingCredits > 0 && data.finishReason === 'stop') {
+    if (modelType === 'small' && data.remainingCredits > 0 && data.finishReason === 'stop') {
       const $boost = document.createElement('div');
       $boost.className = 'boost';
       $boost.title = 'Regenerate with more powerful AI';

@@ -29,7 +29,7 @@ public static class Api
         $"It is {DateTime.UtcNow:d MMM yyyy}."
       });
       ChatGPTCompletion response = null;
-      var model = OpenAIModel.Dictionary[chatRequest.Model];
+      var model = OpenAIModel.Dictionary[chatRequest.ModelType];
       try
       {
         var chat = new ChatGPT(httpClientFactory.CreateClient("OpenAI"), model.Name, hubContext.Clients, chatRequest.ConnectionId);
@@ -48,7 +48,7 @@ public static class Api
         Response = response.Content,
         FinishReason = response.FinishReason,
         RemainingCredits = Math.Max((int)Math.Round(remainingCredits - thisUsage, 0, MidpointRounding.AwayFromZero), 0),
-        Stop = response.PromptTokens + response.CompletionTokens > (chatRequest.Model == "gpt-4" ? 10000 : 3200) || response.FinishReason != "stop"
+        Stop = response.PromptTokens + response.CompletionTokens > (chatRequest.ModelType == "default" ? 10000 : 3200) || response.FinishReason != "stop"
       };
       return Results.Ok(data);
     });
@@ -72,8 +72,8 @@ public static class Api
         return Results.Problem(exc.Message);
       }
 
-      var gpt4modelName = OpenAIModel.Dictionary["gpt-4"].Name;
-      var chat = new ChatGPT(httpClientFactory.CreateClient("OpenAI"), gpt4modelName);
+      var defaultModelName = OpenAIModel.Dictionary["default"].Name;
+      var chat = new ChatGPT(httpClientFactory.CreateClient("OpenAI"), defaultModelName);
 
       var systemPrompt = new ChatGPTMessage
       {
@@ -128,7 +128,7 @@ Output format:
               Messages = prompts,
               Temperature = 0.0m,
               ConversationId = feedbackRequest.ConversationId,
-              Model = "gpt-4",
+              ModelType = "default",
               TemplateId = "feedback-spreadsheet"
             };
             await service.LogChatAsync(nameParts[0], chatRequest, ticks, response?.PromptTokens ?? 0, response?.CompletionTokens ?? 0, GetFilterReason(response.FinishReason));
@@ -217,7 +217,7 @@ public static class AntiForgeryExtensions
 
 public class ChatRequest {
   public IList<ChatGPTMessage> Messages { get; set; }
-  public string Model { get; set; }
+  public string ModelType { get; set; }
   public decimal Temperature { get; set; }
   public string TemplateId { get; set; }
   public string ConversationId { get; set; }

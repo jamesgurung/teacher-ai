@@ -22,18 +22,18 @@ public class TableService(string domain)
   public async Task LogChatAsync(string username, ChatRequest chatRequest, long ticks, int promptTokens, int completionTokens, string contentFilter)
   {
     ArgumentNullException.ThrowIfNull(chatRequest);
+    var model = OpenAIModel.Dictionary[chatRequest.ModelType];
     var table = client.GetTableClient("chatlog");
     var entry = new ChatLog {
       PartitionKey = domain,
       RowKey = $"{username}_{ticks}",
       Chat = JsonSerializer.Serialize(chatRequest.Messages, _jsonOptions),
       Template = chatRequest.TemplateId,
-      Model = chatRequest.Model,
+      Model = model.Name,
       Temperature = chatRequest.Temperature,
       UserPrompt = chatRequest.Messages.LastOrDefault(o => o.Role == "user")?.Content,
       Completion = chatRequest.Messages.Last().Role == "assistant" ? chatRequest.Messages.Last().Content : null,
-      PromptTokens = promptTokens,
-      CompletionTokens = completionTokens,
+      Cost = promptTokens * model.CostPerPromptToken + completionTokens * model.CostPerCompletionToken,
       ConversationId = chatRequest.ConversationId,
       ContentFilter = contentFilter
     };
@@ -46,12 +46,10 @@ public class TableService(string domain)
     var start = $"{username}_{lastMonday.Ticks}";
     var end = $"{username}_{DateTime.UtcNow.AddDays(1).Ticks}";
     var results = await table.QueryAsync<ChatLog>(
-      filter: o => o.PartitionKey == domain && o.RowKey.CompareTo(start) >= 0 && o.RowKey.CompareTo(end) < 0,
-      select: [nameof(ChatLog.PromptTokens), nameof(ChatLog.CompletionTokens), nameof(ChatLog.Model)]
+      filter: o => o.PartitionKey == domain && o.RowKey.CompareTo(start) >= 0 && o.RowKey.CompareTo(end) < 0 && o.Model != "credits",
+      select: [nameof(ChatLog.Cost)]
     ).ToListAsync();
-    return results
-      .Select(o => new { Chat = o, Model = OpenAIModel.Dictionary[o.Model] })
-      .Sum(o => o.Chat.PromptTokens * o.Model.CostPerPromptToken + (o.Chat.CompletionTokens ?? 0) * o.Model.CostPerCompletionToken);
+    return results.Sum(o => o.Cost);
   }
 
   public async Task<decimal> CalculateTotalSpendAsync(int days)
@@ -60,12 +58,9 @@ public class TableService(string domain)
     var start = DateTime.UtcNow.AddDays(-days);
     var results = await table.QueryAsync<ChatLog>(
       filter: o => o.PartitionKey == domain && o.Timestamp >= start && o.Model != "credits",
-      select: [nameof(ChatLog.RowKey), nameof(ChatLog.PromptTokens), nameof(ChatLog.CompletionTokens), nameof(ChatLog.Model)]
+      select: [nameof(ChatLog.RowKey), nameof(ChatLog.Cost)]
     ).ToListAsync();
-    return results
-      .Select(o => new { Chat = o, Ticks = long.Parse(o.RowKey.Split('_')[1], CultureInfo.InvariantCulture), Model = OpenAIModel.Dictionary[o.Model] })
-      .Where(o => o.Ticks >= start.Ticks)
-      .Sum(o => o.Chat.PromptTokens * o.Model.CostPerPromptToken + (o.Chat.CompletionTokens ?? 0) * o.Model.CostPerCompletionToken);
+    return results.Sum(o => o.Cost);
   }
 
   public async Task AddCreditsAsync(string username, int credits) {
@@ -75,7 +70,7 @@ public class TableService(string domain)
       PartitionKey = domain,
       RowKey = $"{username}_{DateTime.UtcNow.Ticks}",
       Model = "credits",
-      PromptTokens = credits
+      Cost = -credits
     };
     await table.AddEntityAsync(entry);
   }
@@ -102,15 +97,14 @@ public class TableService(string domain)
     var results = items.Select(o => new {
         Chat = o,
         Username = o.RowKey.Split('_')[0],
-        Ticks = long.Parse(o.RowKey.Split('_')[1], CultureInfo.InvariantCulture),
-        Model = OpenAIModel.Dictionary[o.Model]
+        Ticks = long.Parse(o.RowKey.Split('_')[1], CultureInfo.InvariantCulture)
       })
       .Where(o => o.Ticks >= lastMonday.Ticks)
       .GroupBy(o => o.Username).Select(o => new {
         User = o.Key,
         Words = o.Sum(c => CountWords(c.Chat.Completion)),
         Chats = o.DistinctBy(o => o.Chat.ConversationId).Count(),
-        Credits = o.Sum(c => c.Chat.PromptTokens * c.Model.CostPerPromptToken + (c.Chat.CompletionTokens ?? 0) * c.Model.CostPerCompletionToken)
+        Credits = o.Sum(c => c.Chat.Cost)
        })
       .OrderByDescending(o => o.Words).ToList();
     var totals = $"| *Total* | *{results.Sum(o => o.Words)}* | *{results.Sum(o => o.Chats)}* | *{Math.Round(results.Sum(o => o.Credits), 0, MidpointRounding.AwayFromZero)}* |";
@@ -134,10 +128,9 @@ public class ChatLog : ITableEntity
   public decimal? Temperature { get; set; }
   public string UserPrompt { get; set; }
   public string Completion { get; set; }
-  public int PromptTokens { get; set; }
-  public int? CompletionTokens { get; set; }
   public string ConversationId { get; set; }
   public string ContentFilter { get; set; }
+  public decimal Cost { get; set; }
 }
 
 public static class QueryExtensions
