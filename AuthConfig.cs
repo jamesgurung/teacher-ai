@@ -19,8 +19,8 @@ public static class AuthConfig
       {
         o.LoginPath = "/auth/login";
         o.LogoutPath = "/auth/logout";
-        o.ExpireTimeSpan = TimeSpan.FromDays(90);
-        o.SlidingExpiration = true;
+        o.ExpireTimeSpan = TimeSpan.FromDays(30);
+        o.SlidingExpiration = false;
         o.ReturnUrlParameter = "path";
         o.Events = new()
         {
