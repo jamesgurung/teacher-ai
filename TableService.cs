@@ -33,14 +33,14 @@ public class TableService(string domain)
       Temperature = chatRequest.Temperature,
       UserPrompt = chatRequest.Messages.LastOrDefault(o => o.Role == "user")?.Content,
       Completion = chatRequest.Messages.Last().Role == "assistant" ? chatRequest.Messages.Last().Content : null,
-      Cost = promptTokens * model.CostPerPromptToken + completionTokens * model.CostPerCompletionToken,
+      Cost = (double)(promptTokens * model.CostPerPromptToken + completionTokens * model.CostPerCompletionToken),
       ConversationId = chatRequest.ConversationId,
       ContentFilter = contentFilter
     };
     await table.AddEntityAsync(entry);
   }
 
-  public async Task<decimal> CalculateUsageAsync(string username) {
+  public async Task<double> CalculateUsageAsync(string username) {
     var table = client.GetTableClient("chatlog");
     var lastMonday = DateTime.UtcNow.Date.AddDays(-(((int)DateTime.UtcNow.DayOfWeek + 6) % 7));
     var start = $"{username}_{lastMonday.Ticks}";
@@ -52,13 +52,13 @@ public class TableService(string domain)
     return results.Sum(o => o.Cost);
   }
 
-  public async Task<decimal> CalculateTotalSpendAsync(int days)
+  public async Task<double> CalculateTotalSpendAsync(int days)
   {
     var table = client.GetTableClient("chatlog");
     var start = DateTime.UtcNow.AddDays(-days);
     var results = await table.QueryAsync<ChatLog>(
       filter: o => o.PartitionKey == domain && o.Timestamp >= start && o.Model != "credits",
-      select: [nameof(ChatLog.RowKey), nameof(ChatLog.Cost)]
+      select: [nameof(ChatLog.Cost)]
     ).ToListAsync();
     return results.Sum(o => o.Cost);
   }
@@ -125,12 +125,12 @@ public class ChatLog : ITableEntity
   public string Chat { get; set; }
   public string Template { get; set; }
   public string Model { get; set; }
-  public decimal? Temperature { get; set; }
+  public double? Temperature { get; set; }
   public string UserPrompt { get; set; }
   public string Completion { get; set; }
   public string ConversationId { get; set; }
   public string ContentFilter { get; set; }
-  public decimal Cost { get; set; }
+  public double Cost { get; set; }
 }
 
 public static class QueryExtensions

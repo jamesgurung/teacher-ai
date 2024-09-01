@@ -33,7 +33,7 @@ public static class Api
       try
       {
         var chat = new ChatGPT(httpClientFactory.CreateClient("OpenAI"), model.Name, hubContext.Clients, chatRequest.ConnectionId);
-        response = await chat.SendGptRequestStreamingAsync(chatRequest.Messages, chatRequest.Temperature, 0.95m, $"{ticks}");
+        response = await chat.SendGptRequestStreamingAsync(chatRequest.Messages, chatRequest.Temperature, 0.95, $"{ticks}");
         if (response.FinishReason != "prompt_filter" && response.FinishReason != "error") {
           chatRequest.Messages.Add(new() { Role = "assistant", Content = response.Content });
         }
@@ -42,7 +42,7 @@ public static class Api
         await service.LogChatAsync(nameParts[0], chatRequest, ticks, response?.PromptTokens ?? 0, response?.CompletionTokens ?? 0, GetFilterReason(response.FinishReason));
         #endif
       }
-      var thisUsage = response.PromptTokens * model.CostPerPromptToken + response.CompletionTokens * model.CostPerCompletionToken;
+      var thisUsage = (double)(response.PromptTokens * model.CostPerPromptToken + response.CompletionTokens * model.CostPerCompletionToken);
 
       var data = new ChatResponse {
         Response = response.Content,
@@ -113,7 +113,7 @@ Output format:
 
         try
         {
-          response = await chat.SendGptRequestAsync(prompts, 0.0m, 0.0m, $"{ticks}");
+          response = await chat.SendGptRequestAsync(prompts, 0, 0, $"{ticks}");
           if (response.FinishReason != "prompt_filter" && response.FinishReason != "error")
           {
             prompts.Add(new() { Role = "assistant", Content = response.Content });
@@ -126,7 +126,7 @@ Output format:
             var chatRequest = new ChatRequest
             {
               Messages = prompts,
-              Temperature = 0.0m,
+              Temperature = 0,
               ConversationId = feedbackRequest.ConversationId,
               ModelType = "default",
               TemplateId = "feedback-spreadsheet"
@@ -218,7 +218,7 @@ public static class AntiForgeryExtensions
 public class ChatRequest {
   public IList<ChatGPTMessage> Messages { get; set; }
   public string ModelType { get; set; }
-  public decimal Temperature { get; set; }
+  public double Temperature { get; set; }
   public string TemplateId { get; set; }
   public string ConversationId { get; set; }
   public string ConnectionId { get; set; }

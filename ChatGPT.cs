@@ -8,7 +8,7 @@ namespace TeacherAI;
 
 public class ChatGPT(HttpClient client, string model, IHubClients<IChatClient> hub = null, string chatId = null)
 {
-  public async Task<ChatGPTCompletion> SendGptRequestStreamingAsync(IList<ChatGPTMessage> prompts, decimal temperature, decimal topP, string identifier) {
+  public async Task<ChatGPTCompletion> SendGptRequestStreamingAsync(IList<ChatGPTMessage> prompts, double temperature, double topP, string identifier) {
     var request = new ChatGPTRequest
     {
       User = identifier,
@@ -50,7 +50,7 @@ public class ChatGPT(HttpClient client, string model, IHubClients<IChatClient> h
     return new() { Content = content.ToString(), FinishReason = finishReason, PromptTokens = promptTokens, CompletionTokens = completionTokens };
   }
 
-  public async Task<ChatGPTCompletion> SendGptRequestAsync(IList<ChatGPTMessage> prompts, decimal temperature, decimal topP, string identifier)
+  public async Task<ChatGPTCompletion> SendGptRequestAsync(IList<ChatGPTMessage> prompts, double temperature, double topP, string identifier)
   {
     var request = new ChatGPTRequest
     {
@@ -78,11 +78,11 @@ public class ChatGPTRequest
   [JsonPropertyName("user")]
   public string User { get; set; }
   [JsonPropertyName("temperature")]
-  public decimal Temperature { get; set; } 
+  public double Temperature { get; set; } 
   [JsonPropertyName("top_p")]
-  public decimal TopP { get; set; }
+  public double TopP { get; set; }
   [JsonPropertyName("n")]
-  public decimal Choices { get; set; }
+  public double Choices { get; set; }
   [JsonPropertyName("stream")]
   public bool Stream { get; set; }
   [JsonPropertyName("model")]
