@@ -9,7 +9,7 @@ public class TokenAuthenticationProvider : IAuthenticationProvider
   public static string AuthRedirectUrl =>
     $"https://login.microsoftonline.com/{_tenantId}/oauth2/v2.0/authorize?client_id={_clientId}&prompt=consent&redirect_uri={Uri.EscapeDataString(_redirectUri)}&response_type=code" +
     $"&scope=https%3A%2F%2Fgraph.microsoft.com%2Fuser.read%20https%3A%2F%2Fgraph.microsoft.com%2Ffiles.readwrite.all";
-  
+
   private static string _accessToken;
   private static DateTime _expirationTime;
 

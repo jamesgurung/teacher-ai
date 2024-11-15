@@ -23,7 +23,8 @@ OpenAIModel.Dictionary = models.ToDictionary(model => model.Type);
 TokenAuthenticationProvider.Configure(builder.Configuration["Azure:TenantId"], builder.Configuration["Azure:ClientId"],
   builder.Configuration["Azure:ClientSecret"], builder.Configuration["Azure:RefreshToken"]);
 
-builder.Services.AddHttpClient("OpenAI", options => {
+builder.Services.AddHttpClient("OpenAI", options =>
+{
   options.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", builder.Configuration["OpenAI:Key"]);
   options.BaseAddress = new Uri("https://api.openai.com/v1/chat/completions");
   options.Timeout = TimeSpan.FromMinutes(10);

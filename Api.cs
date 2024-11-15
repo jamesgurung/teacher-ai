@@ -23,7 +23,8 @@ public static class Api
       var remainingCredits = Organisation.Instance.UserCreditsPerWeek - await service.CalculateUsageAsync(nameParts[0]);
       if (remainingCredits <= 0) return Results.BadRequest("Insufficient credits.");
 
-      chatRequest.Messages.Insert(0, new() {
+      chatRequest.Messages.Insert(0, new()
+      {
         Role = "system",
         Content = $"You are a friendly and professional assistant, supporting teachers in a UK secondary school. Use British English. " +
         $"It is {DateTime.UtcNow:d MMM yyyy}."
@@ -34,17 +35,21 @@ public static class Api
       {
         var chat = new ChatGPT(httpClientFactory.CreateClient("OpenAI"), model.Name, hubContext.Clients, chatRequest.ConnectionId);
         response = await chat.SendGptRequestStreamingAsync(chatRequest.Messages, chatRequest.Temperature, 0.95, $"{ticks}");
-        if (response.FinishReason != "prompt_filter" && response.FinishReason != "error") {
+        if (response.FinishReason is not "prompt_filter" and not "error")
+        {
           chatRequest.Messages.Add(new() { Role = "assistant", Content = response.Content });
         }
-      } finally {
-        #if !DEBUG
-        await service.LogChatAsync(nameParts[0], chatRequest, ticks, response?.PromptTokens ?? 0, response?.CompletionTokens ?? 0, GetFilterReason(response.FinishReason));
-        #endif
       }
-      var thisUsage = (double)(response.PromptTokens * model.CostPerPromptToken + response.CompletionTokens * model.CostPerCompletionToken);
+      finally
+      {
+#if !DEBUG
+        await service.LogChatAsync(nameParts[0], chatRequest, ticks, response?.PromptTokens ?? 0, response?.CompletionTokens ?? 0, GetFilterReason(response.FinishReason));
+#endif
+      }
+      var thisUsage = (double)((response.PromptTokens * model.CostPerPromptToken) + (response.CompletionTokens * model.CostPerCompletionToken));
 
-      var data = new ChatResponse {
+      var data = new ChatResponse
+      {
         Response = response.Content,
         FinishReason = response.FinishReason,
         RemainingCredits = Math.Max((int)Math.Round(remainingCredits - thisUsage, 0, MidpointRounding.AwayFromZero), 0),
@@ -114,7 +119,7 @@ Output format:
         try
         {
           response = await chat.SendGptRequestAsync(prompts, 0, 0, $"{ticks}");
-          if (response.FinishReason != "prompt_filter" && response.FinishReason != "error")
+          if (response.FinishReason is not "prompt_filter" and not "error")
           {
             prompts.Add(new() { Role = "assistant", Content = response.Content });
           }
@@ -141,7 +146,9 @@ Output format:
           feedback = response.FinishReason == "stop"
             ? JsonSerializer.Deserialize<FeedbackResponse>(response.Content, jsonOptions)
             : new() { Mark = -1, Evaluation = response.FinishReason == "error" ? "Error: marking failed" : "Error: content filter triggered" };
-        } catch (JsonException) {
+        }
+        catch (JsonException)
+        {
           feedback = new() { Mark = -1, Evaluation = "Error: unable to parse output" };
         }
 
@@ -186,12 +193,15 @@ Output format:
     });
   }
 
-  private static string GetFilterReason(string finishReason) => finishReason switch
+  private static string GetFilterReason(string finishReason)
   {
-    "prompt_filter" => "Harmful prompt",
-    "content_filter" => "Harmful completion",
-    _ => "OK"
-  };
+    return finishReason switch
+    {
+      "prompt_filter" => "Harmful prompt",
+      "content_filter" => "Harmful completion",
+      _ => "OK"
+    };
+  }
 }
 
 public static class AntiForgeryExtensions
@@ -215,7 +225,8 @@ public static class AntiForgeryExtensions
   }
 }
 
-public class ChatRequest {
+public class ChatRequest
+{
   public IList<ChatGPTMessage> Messages { get; set; }
   public string ModelType { get; set; }
   public double Temperature { get; set; }
@@ -224,24 +235,28 @@ public class ChatRequest {
   public string ConnectionId { get; set; }
 }
 
-public class ChatResponse {
+public class ChatResponse
+{
   public string Response { get; set; }
   public int RemainingCredits { get; set; }
   public bool Stop { get; set; }
   public string FinishReason { get; set; }
 }
 
-public class AdminRequest {
+public class AdminRequest
+{
   public string Command { get; set; }
 }
 
-public class FeedbackRequest {
+public class FeedbackRequest
+{
   public string Url { get; set; }
   public string ConversationId { get; set; }
   public string ConnectionId { get; set; }
 }
 
-public class FeedbackResponse {
+public class FeedbackResponse
+{
   public string Evaluation { get; set; }
   public int Mark { get; set; }
   public string Feedback { get; set; }

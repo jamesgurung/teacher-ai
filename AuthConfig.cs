@@ -56,7 +56,8 @@ public static class AuthConfig
               identity.RemoveClaim(identity.Claims.ElementAt(i));
             }
             identity.AddClaim(new Claim(ClaimTypes.Name, email));
-            if (isAdmin) {
+            if (isAdmin)
+            {
               identity.AddClaim(new Claim(ClaimTypes.Role, Roles.Admin));
             }
             identity.AddClaim(new Claim(ClaimTypes.Role, Roles.Staff));
@@ -86,7 +87,8 @@ public static class AuthConfig
     });
 
     app.MapGet("/auth/authorise-service-account", [AllowAnonymous] () => Results.Redirect(TokenAuthenticationProvider.AuthRedirectUrl));
-    app.MapGet("/auth/authorise-service-account/done", [AllowAnonymous] async ([FromQuery] string code) => {
+    app.MapGet("/auth/authorise-service-account/done", [AllowAnonymous] async ([FromQuery] string code) =>
+    {
       var refreshToken = await TokenAuthenticationProvider.GetRefreshTokenAsync(code);
       return Results.Ok(new { RefreshToken = refreshToken });
     });

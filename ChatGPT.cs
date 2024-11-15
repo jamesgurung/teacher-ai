@@ -8,7 +8,8 @@ namespace TeacherAI;
 
 public class ChatGPT(HttpClient client, string model, IHubClients<IChatClient> hub = null, string chatId = null)
 {
-  public async Task<ChatGPTCompletion> SendGptRequestStreamingAsync(IList<ChatGPTMessage> prompts, double temperature, double topP, string identifier) {
+  public async Task<ChatGPTCompletion> SendGptRequestStreamingAsync(IList<ChatGPTMessage> prompts, double temperature, double topP, string identifier)
+  {
     var request = new ChatGPTRequest
     {
       User = identifier,
@@ -38,7 +39,8 @@ public class ChatGPT(HttpClient client, string model, IHubClients<IChatClient> h
       if (string.IsNullOrEmpty(line) || !line.StartsWith("data: ", StringComparison.Ordinal)) continue;
       if (line == "data: [DONE]") break;
       var chunk = JsonSerializer.Deserialize<ChatGPTResponseChunk>(line[6..]);
-      if (chunk?.Usage is not null) {
+      if (chunk?.Usage is not null)
+      {
         promptTokens = chunk.Usage.PromptTokens;
         completionTokens = chunk.Usage.CompletionTokens;
       }
@@ -66,7 +68,7 @@ public class ChatGPT(HttpClient client, string model, IHubClients<IChatClient> h
     using var response = await client.PostAsync(string.Empty, body);
     if (response.StatusCode == HttpStatusCode.BadRequest) return new() { Content = "Request rejected.", FinishReason = "prompt_filter" };
     if (!response.IsSuccessStatusCode) return new() { Content = "Request failed.", FinishReason = "error" };
-    var data = JsonSerializer.Deserialize<ChatGPTResponse>(await response.Content.ReadAsStringAsync());    
+    var data = JsonSerializer.Deserialize<ChatGPTResponse>(await response.Content.ReadAsStringAsync());
     return new() { Content = data.Value, FinishReason = data.FinishReason };
   }
 }
@@ -78,7 +80,7 @@ public class ChatGPTRequest
   [JsonPropertyName("user")]
   public string User { get; set; }
   [JsonPropertyName("temperature")]
-  public double Temperature { get; set; } 
+  public double Temperature { get; set; }
   [JsonPropertyName("top_p")]
   public double TopP { get; set; }
   [JsonPropertyName("n")]
@@ -164,7 +166,8 @@ public class ChatGPTResponseMessage
   public string Content { get; set; }
 }
 
-public class ChatGPTCompletion {
+public class ChatGPTCompletion
+{
   public string Content { get; set; }
   public string FinishReason { get; set; }
   public int PromptTokens { get; set; }

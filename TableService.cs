@@ -14,7 +14,8 @@ public class TableService(string domain)
 
   private static TableServiceClient client;
 
-  private static readonly JsonSerializerOptions _jsonOptions = new() {
+  private static readonly JsonSerializerOptions _jsonOptions = new()
+  {
     PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     WriteIndented = true
   };
@@ -24,7 +25,8 @@ public class TableService(string domain)
     ArgumentNullException.ThrowIfNull(chatRequest);
     var model = OpenAIModel.Dictionary[chatRequest.ModelType];
     var table = client.GetTableClient("chatlog");
-    var entry = new ChatLog {
+    var entry = new ChatLog
+    {
       PartitionKey = domain,
       RowKey = $"{username}_{ticks}",
       Chat = JsonSerializer.Serialize(chatRequest.Messages, _jsonOptions),
@@ -33,14 +35,15 @@ public class TableService(string domain)
       Temperature = chatRequest.Temperature,
       UserPrompt = chatRequest.Messages.LastOrDefault(o => o.Role == "user")?.Content,
       Completion = chatRequest.Messages.Last().Role == "assistant" ? chatRequest.Messages.Last().Content : null,
-      Cost = (double)(promptTokens * model.CostPerPromptToken + completionTokens * model.CostPerCompletionToken),
+      Cost = (double)((promptTokens * model.CostPerPromptToken) + (completionTokens * model.CostPerCompletionToken)),
       ConversationId = chatRequest.ConversationId,
       ContentFilter = contentFilter
     };
     await table.AddEntityAsync(entry);
   }
 
-  public async Task<double> CalculateUsageAsync(string username) {
+  public async Task<double> CalculateUsageAsync(string username)
+  {
     var table = client.GetTableClient("chatlog");
     var lastMonday = DateTime.UtcNow.Date.AddDays(-(((int)DateTime.UtcNow.DayOfWeek + 6) % 7));
     var start = $"{username}_{lastMonday.Ticks}";
@@ -63,7 +66,8 @@ public class TableService(string domain)
     return results.Sum(o => o.Cost);
   }
 
-  public async Task AddCreditsAsync(string username, int credits) {
+  public async Task AddCreditsAsync(string username, int credits)
+  {
     var table = client.GetTableClient("chatlog");
     var entry = new ChatLog
     {
@@ -94,25 +98,30 @@ public class TableService(string domain)
     var items = await table.QueryAsync<ChatLog>(
       filter: o => o.PartitionKey == domain && o.Timestamp >= lastMonday && o.Model != "credits"
     ).ToListAsync();
-    var results = items.Select(o => new {
-        Chat = o,
-        Username = o.RowKey.Split('_')[0],
-        Ticks = long.Parse(o.RowKey.Split('_')[1], CultureInfo.InvariantCulture)
-      })
+    var results = items.Select(o => new
+    {
+      Chat = o,
+      Username = o.RowKey.Split('_')[0],
+      Ticks = long.Parse(o.RowKey.Split('_')[1], CultureInfo.InvariantCulture)
+    })
       .Where(o => o.Ticks >= lastMonday.Ticks)
-      .GroupBy(o => o.Username).Select(o => new {
+      .GroupBy(o => o.Username).Select(o => new
+      {
         User = o.Key,
         Words = o.Sum(c => CountWords(c.Chat.Completion)),
         Chats = o.DistinctBy(o => o.Chat.ConversationId).Count(),
         Credits = o.Sum(c => c.Chat.Cost)
-       })
+      })
       .OrderByDescending(o => o.Words).ToList();
     var totals = $"| *Total* | *{results.Sum(o => o.Words)}* | *{results.Sum(o => o.Chats)}* | *{Math.Round(results.Sum(o => o.Credits), 0, MidpointRounding.AwayFromZero)}* |";
     return results.Select(o => $"| {o.User} | {o.Words} | {o.Chats} | {Math.Round(o.Credits, 0, MidpointRounding.AwayFromZero)} |").Append(totals).ToList();
   }
 
   private static readonly char[] separators = [' ', ',', '.', ';', ':', '-', '\n', '\r', '\t'];
-  private static int CountWords(string text) => text?.Split(separators, StringSplitOptions.RemoveEmptyEntries).Length ?? 0;
+  private static int CountWords(string text)
+  {
+    return text?.Split(separators, StringSplitOptions.RemoveEmptyEntries).Length ?? 0;
+  }
 }
 
 public class ChatLog : ITableEntity

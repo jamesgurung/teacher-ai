@@ -14,7 +14,7 @@ public class Spreadsheet
   private Dictionary<string, int> _columnIndex;
   private string _firstColumnLetter;
   private string _lastColumnLetter;
-  
+
   public IReadOnlyList<StudentResponse> Responses { get; private set; }
   public string Question { get; private set; }
   public string MarkScheme { get; private set; }
@@ -22,7 +22,7 @@ public class Spreadsheet
   public Spreadsheet(string shareUrl)
   {
     ArgumentNullException.ThrowIfNull(shareUrl);
-    string base64Value = Convert.ToBase64String(Encoding.UTF8.GetBytes(shareUrl.Split('?')[0]));
+    var base64Value = Convert.ToBase64String(Encoding.UTF8.GetBytes(shareUrl.Split('?')[0]));
     _encodedUrl = "u!" + base64Value.TrimEnd('=').Replace('/', '_').Replace('+', '-');
     var authProvider = new TokenAuthenticationProvider();
     _client = new GraphServiceClient(authProvider);
@@ -81,7 +81,7 @@ public class Spreadsheet
     {
       Name = r[_columnIndex["Name"]],
       Response = r[_columnIndex["Response"]],
-      Mark = int.TryParse(r[_columnIndex["Mark"]], out int mark) ? mark : null,
+      Mark = int.TryParse(r[_columnIndex["Mark"]], out var mark) ? mark : null,
       Evaluation = r[_columnIndex["Evaluation"]],
       Feedback = r[_columnIndex["Feedback"]],
       Task = r[_columnIndex["T Task"]],
@@ -108,10 +108,12 @@ public class Spreadsheet
     return range.Request().PatchAsync(body);
   }
 
-  private static string ColumnLetterFromIndex(int index) {
+  private static string ColumnLetterFromIndex(int index)
+  {
     var sb = new StringBuilder();
-    while (index >= 0) {
-      sb.Insert(0, (char)('A' + index % 26));
+    while (index >= 0)
+    {
+      sb.Insert(0, (char)('A' + (index % 26)));
       index /= 26;
       index--;
     }
@@ -119,7 +121,8 @@ public class Spreadsheet
   }
 }
 
-public class StudentResponse {
+public class StudentResponse
+{
   public string Name { get; init; }
   public string Response { get; init; }
   public int? Mark { get; set; }
@@ -129,7 +132,8 @@ public class StudentResponse {
   public string SPaG { get; set; }
 }
 
-public class SpreadsheetSetupException : Exception {
+public class SpreadsheetSetupException : Exception
+{
   public SpreadsheetSetupException() { }
   public SpreadsheetSetupException(string message) : base(message) { }
   public SpreadsheetSetupException(string message, Exception innerException) : base(message, innerException) { }

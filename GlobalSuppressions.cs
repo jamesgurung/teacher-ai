@@ -7,3 +7,5 @@
 [assembly: SuppressMessage("Usage", "CA2227:Collection properties should be read only", Justification = "Used in DTO classes.")]
 [assembly: SuppressMessage("Usage", "CA2234:Pass system uri objects instead of strings", Justification = "HttpClient uses partial path")]
 [assembly: SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Intentionally strings")]
+[assembly: SuppressMessage("Maintainability", "CA1515:Consider making public types internal", Justification = "SignalR requires public types at runtime")]
+[assembly: SuppressMessage("Style", "IDE0058:Expression value is never used", Justification = "Expression values not required")]

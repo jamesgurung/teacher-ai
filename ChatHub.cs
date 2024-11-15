@@ -10,4 +10,4 @@ public interface IChatClient
 }
 
 [Authorize]
-public class ChatHub : Hub<IChatClient> {}
+public class ChatHub : Hub<IChatClient> { }
