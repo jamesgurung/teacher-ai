@@ -2,21 +2,14 @@
 @{
   var returnUrl = Request.Query["path"].FirstOrDefault();
 }
-
-<header>
-<div>
-  &#x1F916; <b>AI Assistant</b>
-</div>
-<div>
-    <span class="hide-mobile"><i>@Organisation.Instance.Name</i></span>
-</div>
-</header>
-
-<div style="margin: 80px 0 40px">
-  <p style="text-align: center">
-    Please sign in using your organisational Microsoft account.
-  </p>
-  <p style="text-align: center">
-    <a href="/auth/login/challenge@(string.IsNullOrEmpty(returnUrl) ? string.Empty : $"?path={returnUrl}")">Login</a>
-  </p>
+<div class="main-content landing-centered">
+  <div id="landing-message">
+    <img src="/apple-touch-icon.png" class="logo" />
+    <h1 class="brand">@Organisation.Instance.Name <span>AI</span></h1>
+    <p>Our artificial intelligence assistant</p>
+    <a href="/auth/login/challenge@(string.IsNullOrEmpty(returnUrl) ? string.Empty : $"?path={returnUrl}")" class="login-btn">
+      <span class="material-symbols-rounded">login</span>
+      Sign in with Microsoft
+    </a>
+  </div>
 </div>

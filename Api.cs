@@ -1,265 +1,305 @@
-﻿using Microsoft.AspNetCore.Antiforgery;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
+using OpenAI.Moderations;
+using OpenAI.Responses;
+using System.ClientModel;
 using System.Globalization;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
-namespace TeacherAI;
+namespace OrgAI;
 
 public static class Api
 {
-  private static readonly JsonSerializerOptions jsonOptions = new() { PropertyNameCaseInsensitive = true };
+  public const string FlagToken = "[FLAG]";
+  public const string FlagIcon = "\uD83D\uDEA9";
+  private const string MessageDelimeter = "\n\n---\n\n";
 
   public static void MapApiPaths(this WebApplication app)
   {
     var group = app.MapGroup("/api").ValidateAntiforgery();
 
-    group.MapPost("/chat", [Authorize] async (ChatRequest chatRequest, HttpContext context, IHttpClientFactory httpClientFactory, IHubContext<ChatHub, IChatClient> hubContext) =>
+    group.MapPost("/chat", [Authorize] async ([FromForm] string id, [FromForm] string presetId, [FromForm] string prompt, [FromForm] IFormFileCollection files,
+      [FromForm] string instanceId, HttpContext context, IHubContext<ChatHub, IChatClient> hubContext) =>
     {
-      var ticks = DateTime.UtcNow.Ticks;
-      var nameParts = context.User.Identity.Name.Split('@');
-      var service = new TableService(nameParts[1]);
+      var userEmail = context.User.Identity.Name;
+      var isReviewer = context.User.IsInRole(AuthConstants.Reviewer);
+      var userGroup = UserGroup.ConfigByGroupName[UserGroup.GroupNameByUserEmail[userEmail]];
+      var isFirstTurn = string.IsNullOrEmpty(id);
 
-      var remainingCredits = Organisation.Instance.UserCreditsPerWeek - await service.CalculateUsageAsync(nameParts[0]);
-      if (remainingCredits <= 0) return Results.BadRequest("Insufficient credits.");
+      if (string.IsNullOrEmpty(instanceId)) return Results.BadRequest("Instance ID cannot be empty.");
+      if (string.IsNullOrEmpty(prompt)) return Results.BadRequest("Prompt cannot be empty.");
+      if (files is not null && files.Count > 3) return Results.BadRequest("Too many files.");
+      if (files is not null && files.Any(file => file.Length > 10 * 1024 * 1024)) return Results.BadRequest("File size exceeds 10 MB.");
+      if ((files?.Count ?? 0) > 0 && !userGroup.AllowUploads) return Results.BadRequest("File uploads are not allowed.");
 
-      chatRequest.Messages.Insert(0, new()
+      var spend = await TableService.GetSpendAsync(userEmail);
+      if (spend >= Organisation.Instance.UserMaxWeeklySpend) return Results.StatusCode(429);
+
+      Task<ClientResult<OpenAIResponse>> summaryTask = null;
+      Conversation conversation = null;
+      ConversationEntity conversationEntity = null;
+
+      var moderationClient = new ModerationClient("omni-moderation-latest", OpenAIConfig.Instance.ApiKey);
+      var moderationFlagged = false;
+
+      if (isFirstTurn)
       {
-        Role = "system",
-        Content = $"You are a friendly and professional assistant, supporting teachers in a UK secondary school. Use British English. " +
-        $"It is {DateTime.UtcNow:d MMM yyyy}."
-      });
-      ChatGPTCompletion response = null;
-      var model = OpenAIModel.Dictionary[chatRequest.ModelType];
-      try
-      {
-        var chat = new ChatGPT(httpClientFactory.CreateClient("OpenAI"), model.Name, hubContext.Clients, chatRequest.ConnectionId);
-        response = await chat.SendGptRequestStreamingAsync(chatRequest.Messages, chatRequest.Temperature, 0.95, $"{ticks}");
-        if (response.FinishReason is not "prompt_filter" and not "error")
+        if (string.IsNullOrEmpty(presetId) || !userGroup.PresetDictionary.TryGetValue(presetId, out var preset))
         {
-          chatRequest.Messages.Add(new() { Role = "assistant", Content = response.Content });
+          return Results.BadRequest("Invalid preset name.");
+        }
+        if (preset.Instructions.Contains("[RANDOM_10_ABCD]", StringComparison.OrdinalIgnoreCase))
+        {
+          preset = JsonSerializer.Deserialize<Preset>(JsonSerializer.Serialize(preset));
+          var randomString = string.Join(", ", Enumerable.Range(0, 10).Select(_ => new[] { 'a', 'b', 'c', 'd' }[Random.Shared.Next(4)]));
+          preset.Instructions = preset.Instructions.Replace("[RANDOM_10_ABCD]", randomString, StringComparison.OrdinalIgnoreCase);
+        }
+
+        conversation = new Conversation { Preset = preset };
+
+        id = Guid.NewGuid().ToString();
+
+        var moderationPrompt = string.IsNullOrEmpty(preset.Title) ? prompt : $"{preset.Title}:{MessageDelimeter}{prompt}";
+        var moderationResult = await moderationClient.ClassifyTextAsync(moderationPrompt);
+        moderationFlagged = moderationResult.Value.Flagged;
+
+        if (moderationFlagged)
+        {
+          conversationEntity = new ConversationEntity(userEmail, id, $"{FlagIcon} Content flagged", 0m);
+          await TableService.UpsertConversationAsync(conversationEntity);
+        }
+        {
+          var summaryClient = new OpenAIResponseClient(OpenAIConfig.Instance.TitleSummarisationModel, OpenAIConfig.Instance.ApiKey);
+          var summaryOptions = new ResponseCreationOptions
+          {
+            EndUserId = id,
+            Instructions = "The user will post a prompt. Do not respond to the prompt. Summarise it as succinctly as possible, in 3 words or less, for use as a conversation title. " +
+              "Use sentence case, starting the first word with a capital letter. Do not use punctuation. Prefer short words. " +
+              "Try to capture the full context of the query, not just the task category. " +
+              "Only respond with the plaintext title and nothing else (no introduction or conclusion).",
+            Temperature = 0,
+            StoredOutputEnabled = false
+          };
+          var summaryPrompt = string.IsNullOrEmpty(preset.Title) ? prompt : $"{preset.Title}: {prompt}";
+          summaryTask = summaryClient.CreateResponseAsync(summaryPrompt, summaryOptions);
         }
       }
-      finally
+      else
       {
-#if !DEBUG
-        await service.LogChatAsync(nameParts[0], chatRequest, ticks, response?.PromptTokens ?? 0, response?.CompletionTokens ?? 0, GetFilterReason(response.FinishReason));
-#endif
-      }
-      var thisUsage = (double)((response.PromptTokens * model.CostPerPromptToken) + (response.CompletionTokens * model.CostPerCompletionToken));
-
-      var data = new ChatResponse
-      {
-        Response = response.Content,
-        FinishReason = response.FinishReason,
-        RemainingCredits = Math.Max((int)Math.Round(remainingCredits - thisUsage, 0, MidpointRounding.AwayFromZero), 0),
-        Stop = response.PromptTokens + response.CompletionTokens > (chatRequest.ModelType == "default" ? 10000 : 3200) || response.FinishReason != "stop"
-      };
-      return Results.Ok(data);
-    });
-
-    group.MapPost("/feedback", async (FeedbackRequest feedbackRequest, HttpContext context, IHttpClientFactory httpClientFactory, IHubContext<ChatHub, IChatClient> hubContext, IWebHostEnvironment env) =>
-    {
-      var nameParts = context.User.Identity.Name.Split('@');
-      var service = new TableService(nameParts[1]);
-
-      var remainingCredits = Organisation.Instance.UserCreditsPerWeek - await service.CalculateUsageAsync(nameParts[0]);
-      if (remainingCredits <= 0) return Results.BadRequest("Insufficient credits.");
-
-      var spreadsheet = new Spreadsheet(feedbackRequest.Url);
-
-      try
-      {
-        await spreadsheet.OpenAsync();
-      }
-      catch (SpreadsheetSetupException exc)
-      {
-        return Results.Problem(exc.Message);
-      }
-
-      var defaultModelName = OpenAIModel.Dictionary["default"].Name;
-      var chat = new ChatGPT(httpClientFactory.CreateClient("OpenAI"), defaultModelName);
-
-      var systemPrompt = new ChatGPTMessage
-      {
-        Role = "system",
-        Content =
-@"You are a teacher who marks student work. Evaluate it against all the points in the grading criteria, using the same headings that are written at the start of each bullet point.
-
-Output format:
-{
-  ""evaluation"": ""* Criterion heading - Yes, evidence: ... (or) No, reasoning: ...\n* Criterion heading - Yes, evidence: ... (or) No, reasoning: ..."",
-  ""mark"": N,
-  ""feedback"": ""Paragraph of feedback to the student (in the second person) including at least two strengths and a development area"",
-  ""task"": ""Task for the student to add or rewrite a paragraph to reach a higher mark or elevate their response if it already achieved full marks"",
-  ""spag"": ""Comment on spelling, punctuation, and grammar; say 'All correct' or identify all the errors and how to fix them""
-}"
-      };
-
-      var total = spreadsheet.Responses.Count(o => o.Mark is null);
-      var index = 0;
-
-      for (var i = 0; i < spreadsheet.Responses.Count; i++)
-      {
-        var studentWork = spreadsheet.Responses[i];
-        if (studentWork.Mark is not null) continue;
-
-        await hubContext.Clients.Client(feedbackRequest.ConnectionId).Feedback(studentWork.Name, index++, total);
-
-        var userPrompt = new ChatGPTMessage
+        var tableTask = TableService.GetConversationAsync(userEmail, id);
+        var blobTask = BlobService.GetConversationAsync(id);
+        await Task.WhenAll(tableTask, blobTask);
+        conversationEntity = await tableTask;
+        conversation = await blobTask;
+        if (conversationEntity.IsDeleted)
         {
-          Role = "user",
-          Content = $"# Question\n\"\"\"\n{spreadsheet.Question}\n\"\"\"\n\n# Grading criteria:\n\"\"\"\n{spreadsheet.MarkScheme}\n\"\"\"\n\n" +
-            $"# Student answer:\n\"\"\"\n{studentWork.Response}\n\"\"\""
+          return Results.NotFound("Conversation not found.");
+        }
+        if (conversation.Turns.Any(o => o.Role == "assistant" && o.Text == FlagToken))
+        {
+          return Results.BadRequest("Cannot continue a conversation that has been flagged.");
+        }
+        var pastConversation = string.Join(MessageDelimeter, conversation.Turns.Where(o => o.Role == "user").Select(turn => turn.Text));
+        var moderationTitle = string.IsNullOrEmpty(conversation.Preset.Title) ? string.Empty : $"{conversation.Preset.Title}:{MessageDelimeter}";
+        var moderationResult = await moderationClient.ClassifyTextAsync(moderationTitle + pastConversation + MessageDelimeter + prompt);
+        moderationFlagged = moderationResult.Value.Flagged;
+        if (moderationFlagged)
+        {
+          conversationEntity.Title = $"{FlagIcon} {conversationEntity.Title}";
+          await TableService.UpsertConversationAsync(conversationEntity);
+        }
+      }
+
+      if (!OpenAIConfig.Instance.ModelDictionary.TryGetValue(conversation.Preset.Model, out var model))
+      {
+        return Results.BadRequest("Model not supported.");
+      }
+
+      var userTurn = new ConversationTurn
+      {
+        Role = "user",
+        Text = prompt
+      };
+      if (files is not null)
+      {
+        foreach (var file in files)
+        {
+          using var stream = new MemoryStream();
+          await file.CopyToAsync(stream);
+          var base64Content = Convert.ToBase64String(stream.ToArray());
+          if (file.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+          {
+            userTurn.Images ??= [];
+            userTurn.Images.Add(new ConversationTurnImage { Content = base64Content, Type = file.ContentType });
+          }
+          else
+          {
+            userTurn.Files ??= [];
+            userTurn.Files.Add(new ConversationTurnFile { Content = base64Content, Filename = file.FileName });
+          }
+        }
+      }
+      conversation.Turns.Add(userTurn);
+      bool spendLimitReached = false;
+      var streamer = hubContext.Clients.User(userEmail);
+
+      if (moderationFlagged)
+      {
+        await streamer.Append(FlagToken, instanceId);
+        conversation.Turns.Add(new() { Role = "assistant", Text = FlagToken });
+        var updateBlobTask = BlobService.CreateOrUpdateConversationAsync(id, conversation);
+        var reviewTask = isReviewer ? Task.CompletedTask : TableService.UpsertReviewEntityAsync(conversationEntity);
+        await Task.WhenAll(updateBlobTask, reviewTask);
+      }
+      else
+      {
+        var hasTemp = conversation.Preset.Temperature is not null;
+        var chatClient = new OpenAIResponseClient(model.Name, OpenAIConfig.Instance.ApiKey);
+        var chatOptions = new ResponseCreationOptions
+        {
+          EndUserId = id,
+          Instructions = conversation.Preset.Instructions,
+          Temperature = hasTemp ? Convert.ToSingle(conversation.Preset.Temperature, CultureInfo.InvariantCulture) : null,
+          TopP = (hasTemp && conversation.Preset.Temperature < 0.4m) ? 0.9f : null,
+          ReasoningOptions = conversation.Preset.ReasoningEffort switch
+          {
+            "low" => new() { ReasoningEffortLevel = ResponseReasoningEffortLevel.Low },
+            "medium" => new() { ReasoningEffortLevel = ResponseReasoningEffortLevel.Medium },
+            "high" => new() { ReasoningEffortLevel = ResponseReasoningEffortLevel.High },
+            _ => null
+          },
+          StoredOutputEnabled = false
         };
-        var prompts = new List<ChatGPTMessage>() { systemPrompt, userPrompt };
-        ChatGPTCompletion response = null;
-        var ticks = DateTime.UtcNow.Ticks;
-
-        try
+        if (conversation.Preset.WebSearchEnabled && model.CostPer1KWebSearches is not null)
         {
-          response = await chat.SendGptRequestAsync(prompts, 0, 0, $"{ticks}");
-          if (response.FinishReason is not "prompt_filter" and not "error")
+          var org = Organisation.Instance;
+          var location = WebSearchToolLocation.CreateApproximateLocation(org.CountryCode, org.City, org.City, org.Timezone);
+          chatOptions.Tools.Add(ResponseTool.CreateWebSearchTool(location));
+        }
+        if (conversation.Preset.VectorStoreId is not null)
+        {
+          chatOptions.Tools.Add(ResponseTool.CreateFileSearchTool([conversation.Preset.VectorStoreId], 10));
+        }
+
+        var responseItems = conversation.AsResponseItems();
+        var responseStream = chatClient.CreateResponseStreamingAsync(responseItems, chatOptions);
+
+        await foreach (var update in responseStream)
+        {
+          switch (update)
           {
-            prompts.Add(new() { Role = "assistant", Content = response.Content });
+            case StreamingResponseOutputTextDeltaUpdate text:
+              await streamer.Append(text.Delta, instanceId);
+              break;
+            case StreamingResponseWebSearchCallInProgressUpdate _:
+              await streamer.Append("[web_search_in_progress]", instanceId);
+              break;
+            case StreamingResponseWebSearchCallCompletedUpdate _:
+              await streamer.Append("[web_search_completed]", instanceId);
+              break;
+            case StreamingResponseFileSearchCallSearchingUpdate _:
+              await streamer.Append("[file_search_in_progress]", instanceId);
+              break;
+            case StreamingResponseFileSearchCallCompletedUpdate _:
+              await streamer.Append("[file_search_completed]", instanceId);
+              break;
+            case StreamingResponseCompletedUpdate completion:
+              conversation.Turns.Add(new() { Role = "assistant", Text = completion.Response.GetOutputText() });
+              var cost = CalculateCost(model, completion.Response.Usage, completion.Response.OutputItems.Count(item => item is WebSearchCallResponseItem),
+                completion.Response.OutputItems.Count(item => item is FileSearchCallResponseItem));
+              if (isFirstTurn)
+              {
+                var summaryResponse = await summaryTask;
+                cost += CalculateCost(OpenAIConfig.Instance.ModelDictionary[OpenAIConfig.Instance.TitleSummarisationModel], summaryResponse.Value.Usage);
+                conversationEntity = new ConversationEntity(userEmail, id, summaryResponse.Value.GetOutputText(), cost);
+              }
+              else
+              {
+                var existingCost = decimal.Parse(conversationEntity.Cost.ToString(), CultureInfo.InvariantCulture);
+                conversationEntity.Cost = (existingCost + cost).ToString(CultureInfo.InvariantCulture);
+              }
+              var updateBlobTask = BlobService.CreateOrUpdateConversationAsync(id, conversation);
+              var recordSpendTask = TableService.RecordSpendAsync(userEmail, cost);
+              var updateEntityTask = TableService.UpsertConversationAsync(conversationEntity);
+              var reviewTask = isReviewer ? Task.CompletedTask : TableService.UpsertReviewEntityAsync(conversationEntity);
+              await Task.WhenAll(recordSpendTask, updateBlobTask, updateEntityTask, reviewTask);
+              spendLimitReached = (await recordSpendTask) >= Organisation.Instance.UserMaxWeeklySpend;
+              break;
+            default:
+              break;
           }
         }
-        finally
-        {
-          if (!env.IsDevelopment())
-          {
-            var chatRequest = new ChatRequest
-            {
-              Messages = prompts,
-              Temperature = 0,
-              ConversationId = feedbackRequest.ConversationId,
-              ModelType = "default",
-              TemplateId = "feedback-spreadsheet"
-            };
-            await service.LogChatAsync(nameParts[0], chatRequest, ticks, response?.PromptTokens ?? 0, response?.CompletionTokens ?? 0, GetFilterReason(response.FinishReason));
-          }
-        }
-
-        FeedbackResponse feedback;
-        try
-        {
-          feedback = response.FinishReason == "stop"
-            ? JsonSerializer.Deserialize<FeedbackResponse>(response.Content, jsonOptions)
-            : new() { Mark = -1, Evaluation = response.FinishReason == "error" ? "Error: marking failed" : "Error: content filter triggered" };
-        }
-        catch (JsonException)
-        {
-          feedback = new() { Mark = -1, Evaluation = "Error: unable to parse output" };
-        }
-
-        await spreadsheet.WriteFeedbackAsync(i, feedback);
       }
 
-      return Results.Ok();
+      return Results.Ok(new ChatResponse
+      {
+        Id = isFirstTurn ? id : null,
+        Title = isFirstTurn ? conversationEntity.Title : null,
+        SpendLimitReached = spendLimitReached
+      });
     });
 
-    group.MapPost("/admin", [Authorize(Roles = Roles.Admin)] async (AdminRequest adminRequest, HttpContext context) =>
+    group.MapGet("/conversations/{id}", [Authorize] async (string id, HttpContext context) =>
     {
-      var nameParts = context.User.Identity.Name.Split('@');
-      var service = new TableService(nameParts[1]);
-      var parts = adminRequest.Command.ToLowerInvariant().Split(' ');
-      var command = parts[0];
-      switch (command)
+      if (context.User.IsInRole(AuthConstants.Reviewer))
       {
-        case "spend":
-          if (parts.Length != 2 || !int.TryParse(parts[1], out var days)) return Results.Ok("Usage: spend {days}");
-          var spend = await service.CalculateTotalSpendAsync(days);
-          return Results.Ok($"Total spend for the past {days} {(days == 1 ? "day" : "days")}: {spend} credits");
-        case "credit":
-          if (parts.Length != 3 || !int.TryParse(parts[2], out var credits)) return Results.Ok("Usage: credit {username} {credits}");
-          await service.AddCreditsAsync(parts[1], credits);
-          return Results.Ok($"{credits} credits added to user {parts[1]}");
-        case "recent":
-          if (parts.Length != 2 || !int.TryParse(parts[1], out var n)) return Results.Ok("Usage: recent {n}");
-          var recent = await service.GetRecentChatsAsync(n);
-          if (recent.Count == 0) return Results.Ok("No conversations in the past 3 days.");
-          var intro = recent.Count == n ? $"{n} most recent conversations" : $"All {recent.Count} conversations from the past 3 days";
-          var output = $"{intro}:\n\n" + string.Join("\n\n",
-            recent.Select(o => $"# {o.First().RowKey.Split('_')[0]} - {new DateTime(long.Parse(o.First().RowKey.Split('_')[1], CultureInfo.InvariantCulture)):ddd d MMM 'at' HH:mm} " +
-            $"- {o.First().Template}\n\n{string.Join("\n\n", o.Select(c => $"**{o.First().RowKey.Split('_')[0]}**:\n\n{c.UserPrompt}\n\n**{c.Model}**:\n\n{c.Completion}"))}\n\n"));
-          return Results.Ok(output);
-        case "leaderboard":
-          if (parts.Length > 1) return Results.Ok("Usage: leaderboard");
-          var leaderboard = await service.GetLeaderboardAsync();
-          return Results.Ok("# This week's leaderboard\n\n| User | Words | Chats | Credits |\n| :-- | :-: | :-: | :-: |\n" + string.Join('\n', leaderboard));
-        default:
-          return Results.Ok("Unknown command.");
+        return Results.Ok(await BlobService.GetConversationAsync(id));
       }
+      else
+      {
+        var tableTask = TableService.ConversationExistsAsync(context.User.Identity.Name, id);
+        var blobTask = BlobService.GetConversationAsync(id);
+        var entityExists = await tableTask;
+        if (!entityExists) return Results.NotFound();
+        var conversation = await blobTask;
+        return Results.Ok(conversation);
+      }
+    });
+
+    group.MapDelete("/conversations/{id}", [Authorize] async (string id, HttpContext context) =>
+    {
+      var userEmail = context.User.Identity.Name;
+      var conversationEntity = await TableService.GetConversationAsync(userEmail, id);
+      if (conversationEntity.IsDeleted) return Results.NotFound("Conversation not found.");
+      conversationEntity.IsDeleted = true;
+      await TableService.UpsertConversationAsync(conversationEntity);
+      return Results.NoContent();
+    });
+
+    group.MapPost("/conversations/{id}/resolve", [Authorize(Roles = AuthConstants.Reviewer)] async (string id) =>
+    {
+      await TableService.DeleteReviewEntityAsync(id);
+      return Results.NoContent();
+    });
+
+    group.MapGet("/refresh", [Authorize(Roles = AuthConstants.Reviewer)] async (HttpContext context) =>
+    {
+      await BlobService.LoadConfigAsync();
+      return Results.Content("Refreshed presets.", "text/plain");
     });
   }
 
-  private static string GetFilterReason(string finishReason)
+  private static decimal CalculateCost(OpenAIModelConfig model, ResponseTokenUsage usage, int webSearchCount = 0, int fileSearchCount = 0)
   {
-    return finishReason switch
-    {
-      "prompt_filter" => "Harmful prompt",
-      "content_filter" => "Harmful completion",
-      _ => "OK"
-    };
+#if DEBUG
+    return 0;
+#else
+    return usage.InputTokenCount * model.CostPer1MInputTokens / 1_000_000m +
+           usage.OutputTokenCount * model.CostPer1MOutputTokens / 1_000_000m +
+           webSearchCount * (model.CostPer1KWebSearches ?? 0) / 1000m +
+           fileSearchCount * OpenAIConfig.Instance.CostPer1KFileSearches / 1000m;
+#endif
   }
 }
 
-public static class AntiForgeryExtensions
+class ChatResponse
 {
-  public static TBuilder ValidateAntiforgery<TBuilder>(this TBuilder builder) where TBuilder : IEndpointConventionBuilder
-  {
-    return builder.AddEndpointFilter(async (context, next) =>
-    {
-      try
-      {
-        var antiForgeryService = context.HttpContext.RequestServices.GetRequiredService<IAntiforgery>();
-        await antiForgeryService.ValidateRequestAsync(context.HttpContext);
-      }
-      catch (AntiforgeryValidationException)
-      {
-        return Results.BadRequest("Antiforgery token validation failed.");
-      }
-
-      return await next(context);
-    });
-  }
-}
-
-public class ChatRequest
-{
-  public IList<ChatGPTMessage> Messages { get; set; }
-  public string ModelType { get; set; }
-  public double Temperature { get; set; }
-  public string TemplateId { get; set; }
-  public string ConversationId { get; set; }
-  public string ConnectionId { get; set; }
-}
-
-public class ChatResponse
-{
-  public string Response { get; set; }
-  public int RemainingCredits { get; set; }
-  public bool Stop { get; set; }
-  public string FinishReason { get; set; }
-}
-
-public class AdminRequest
-{
-  public string Command { get; set; }
-}
-
-public class FeedbackRequest
-{
-  public string Url { get; set; }
-  public string ConversationId { get; set; }
-  public string ConnectionId { get; set; }
-}
-
-public class FeedbackResponse
-{
-  public string Evaluation { get; set; }
-  public int Mark { get; set; }
-  public string Feedback { get; set; }
-  public string Task { get; set; }
-  public string SPaG { get; set; }
+  [JsonPropertyName("id"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+  public string Id { get; set; }
+  [JsonPropertyName("title"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+  public string Title { get; set; }
+  [JsonPropertyName("spendLimitReached")]
+  public bool SpendLimitReached { get; set; }
 }

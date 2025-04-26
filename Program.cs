@@ -1,7 +1,8 @@
 using Microsoft.AspNetCore.Http.Json;
-using System.Net.Http.Headers;
+using Microsoft.AspNetCore.ResponseCompression;
+using Microsoft.AspNetCore.SignalR;
+using OrgAI;
 using System.Text.Json;
-using TeacherAI;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,28 +10,33 @@ var storageAccountName = builder.Configuration["Azure:StorageAccountName"];
 var storageAccountKey = builder.Configuration["Azure:StorageAccountKey"];
 var connectionString = $"DefaultEndpointsProtocol=https;AccountName={storageAccountName};AccountKey={storageAccountKey};EndpointSuffix=core.windows.net";
 TableService.Configure(connectionString);
+BlobService.Configure(connectionString);
+
+await BlobService.LoadConfigAsync();
 
 builder.ConfigureAuth();
-builder.Services.AddResponseCompression();
+builder.Services.AddResponseCompression(options => { options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(["text/javascript"]); });
 builder.Services.AddAntiforgery(options => { options.HeaderName = "X-XSRF-TOKEN"; });
 builder.Services.Configure<RouteOptions>(options => { options.LowercaseUrls = true; });
 builder.Services.Configure<JsonOptions>(options => { options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase; });
 builder.Services.AddRazorPages(options => { options.Conventions.AllowAnonymousToFolder("/auth"); });
 
 Organisation.Instance = builder.Configuration.GetSection("Organisation").Get<Organisation>();
-var models = builder.Configuration.GetSection("OpenAI:Models").Get<List<OpenAIModel>>();
-OpenAIModel.Dictionary = models.ToDictionary(model => model.Type);
-TokenAuthenticationProvider.Configure(builder.Configuration["Azure:TenantId"], builder.Configuration["Azure:ClientId"],
-  builder.Configuration["Azure:ClientSecret"], builder.Configuration["Azure:RefreshToken"]);
+OpenAIConfig.Instance = builder.Configuration.GetSection("OpenAI").Get<OpenAIConfig>();
 
-builder.Services.AddHttpClient("OpenAI", options =>
-{
-  options.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", builder.Configuration["OpenAI:Key"]);
-  options.BaseAddress = new Uri("https://api.openai.com/v1/chat/completions");
-  options.Timeout = TimeSpan.FromMinutes(10);
-});
-
+builder.Services.AddSingleton<IUserIdProvider, EmailUserIdProvider>();
 builder.Services.AddSignalR();
+
+var minify = !builder.Environment.IsDevelopment();
+builder.Services.AddWebOptimizer(pipeline =>
+{
+  if (minify)
+  {
+    pipeline.MinifyCssFiles("css/*.css");
+    pipeline.MinifyJsFiles("js/*.js");
+    pipeline.AddJavaScriptBundle("js/site.js", "js/*.js");
+  }
+});
 
 var app = builder.Build();
 
@@ -41,6 +47,7 @@ if (!app.Environment.IsDevelopment())
   {
     if (context.Request.Path.Value == "/" && context.Request.Headers.UserAgent.ToString().Equals("alwayson", StringComparison.OrdinalIgnoreCase))
     {
+      await TableService.WarmUpAsync();
       context.Response.StatusCode = 200;
     }
     else if (!context.Request.Host.Host.Equals(Organisation.Instance.AppWebsite, StringComparison.OrdinalIgnoreCase))
@@ -56,10 +63,12 @@ if (!app.Environment.IsDevelopment())
 
 app.UseResponseCompression();
 app.UseHttpsRedirection();
+app.UseWebOptimizer();
 app.UseStaticFiles();
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseAntiforgery();
 
 app.MapHub<ChatHub>("/chat");
 app.MapRazorPages();

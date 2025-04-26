@@ -1,36 +1,128 @@
 ﻿@page
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+@inject IWebHostEnvironment Environment
 @{
-  var userParts = User.Identity.Name.Split('@');
-  var service = new TableService(userParts[1]);
-  var spend = (int)Math.Round(await service.CalculateUsageAsync(userParts[0]), 0, MidpointRounding.AwayFromZero);
-  var remaining = Math.Max(0, Organisation.Instance.UserCreditsPerWeek - spend);
+  var spendTask = TableService.GetSpendAsync(User.Identity.Name);
+  var historyTask = TableService.GetConversationsAsync(User.Identity.Name, true);
+  var reviewTask = User.IsInRole(AuthConstants.Reviewer) ? TableService.GetReviewEntitiesAsync() : Task.FromResult<List<ReviewEntity>>(null);
+  await Task.WhenAll(spendTask, historyTask, reviewTask);
+  var spend = await spendTask;
+  var history = await historyTask;
+  var reviewItems = await reviewTask;
+  var limitReached = spend >= Organisation.Instance.UserMaxWeeklySpend;
+  var userGroup = UserGroup.ConfigByGroupName[UserGroup.GroupNameByUserEmail[User.Identity.Name]];
 }
-
-<header>
-  <div>
-    &#x1F916; <b>AI Assistant</b><a href="/" style="margin-left: 18px">New Chat</a>
+<div id="app-container">
+  <div id="sidebar">
+    <div id="sidebar-header">
+      <a id="logout-btn" class="icon-button" href="/auth/logout">
+        <span class="material-symbols-rounded">logout</span>
+      </a>
+      <button id="new-chat-btn">
+        <span class="material-symbols-rounded">add</span>
+        New Chat
+      </button>
+    </div>
+    <div id="sidebar-tabs">
+      <button class="tab active" id="presets-tab">Tools</button>
+      <button class="tab" id="history-tab">History</button>
+      <button class="tab" id="review-tab" style="display: none">Review <span id="review-badge"></span></button>
+    </div>
+    <div id="presets-list" class="chat-list">
+    </div>
+    <div id="chat-history" class="chat-list" style="display: none">
+    </div>
+    <div id="review-list" class="chat-list" style="display: none">
+    </div>
   </div>
-  <div>
-      <span class="hide-mobile">@User.Identity.Name </span><div id="credits"><div></div></div> <a href="/auth/logout">Logout</a>
-  </div>
-</header>
 
-<div id="messages">
-  <div class="message assistant"><p>Hi there! I'm here to help with educational and administrative tasks. Please do not submit personal or confidential information. All messages are recorded and may be monitored by your organisation.</p></div>
-  <div class="initial-option">Start typing or choose a topic:</p></div>
+  <div class="main-content">
+    <div id="settings-display">
+      <div id="settings-row">
+        <div class="setting-item" title="AI language model">
+          <span class="material-symbols-rounded">network_intelligence</span>
+          <span class="setting-value" id="model-display"></span>
+        </div>
+        <div id="setting-item-temperature" class="setting-item" title="Temperature (lower is more accurate, higher is more creative)">
+          <span class="material-symbols-rounded">thermostat</span>
+          <span class="setting-value" id="temp-display"></span>
+        </div>
+        <div id="setting-item-reasoning" class="setting-item" title="Reasoning effort">
+          <span class="material-symbols-rounded">emoji_objects</span>
+          <span class="setting-value" id="reasoning-display"></span>
+        </div>
+        <div id="setting-item-web-search" class="setting-item" title="Web search is enabled">
+          <span class="material-symbols-rounded">language</span>
+        </div>
+        <div id="setting-item-file-search" class="setting-item" title="This assistant has access to a document store">
+          <span class="material-symbols-rounded">database_search</span>
+        </div>
+        <div class="setting-item">
+          <span class="material-symbols-rounded info-icon" id="system-prompt-icon" title="Click to view the model instructions">info</span>
+          <div id="system-prompt-popup">
+            <button id="system-prompt-close-btn" class="close-btn" aria-label="Close"></button>
+            <h2>Instructions given to the model:</h2>
+            <div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="user" style="display: none"></div>
+
+    <div id="welcome-message">
+      <img src="/apple-touch-icon.png" class="logo" />
+      <h1 class="brand">@Organisation.Instance.Name <span>AI</span></h1>
+      <div id="intro-text"></div>
+    </div>
+
+    <div id="chat-container">
+      <div id="chat-content-container">
+      </div>
+    </div>
+
+    <div id="input-container">
+      <form id="chat-form">
+        <div id="file-upload">
+          <label for="file-input" id="file-label">
+            <span class="material-symbols-rounded">attach_file</span>
+          </label>
+          <input type="file" id="file-input" accept=".jpeg,.jpg,.png,.gif,.webp" multiple>
+          <div id="file-preview"></div>
+        </div>
+        <textarea id="user-input" rows="1"></textarea>
+        <button type="submit" id="send-btn">
+          <span class="material-symbols-rounded">send</span>
+        </button>
+      </form>
+    </div>
+  </div>
 </div>
-<textarea id="prompt" autofocus></textarea>
+
+<button id="mobile-sidebar-toggle"><span class="material-symbols-rounded">menu</span></button>
 
 @section Scripts {
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js" integrity="sha512-7SRCYIJtR6F8ocwW7UxW6wGKqbSyqREDbfCORCbGLatU0iugBLwyOXpzhkPyHIFdBO0K2VCu57fvP2Twgx1o2A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/15.0.0/marked.min.js" integrity="sha512-/tpw1ej/DTEJDoX8qZM1YY8H9bz2+2T9nhojBmizu9JDVNvjXvgA3zfRjVF96V3bwK6Uf3eIqrYKIKRZx203iA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@15.0.8/lib/marked.umd.min.js" integrity="sha512-DmUkpWXSNvkI/wvXiCbcM8EQQDNr0AaueHX7+xW1fhi2DmL0QD1rfaTAhCDmmdhse+ZscgbpPSwX7uIJLtYZyQ==" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@8.0.7/dist/browser/signalr.min.js" integrity="sha512-7SRCYIJtR6F8ocwW7UxW6wGKqbSyqREDbfCORCbGLatU0iugBLwyOXpzhkPyHIFdBO0K2VCu57fvP2Twgx1o2A==" crossorigin="anonymous"></script>
   <script>
-    let credits = @remaining;
-    const maxCredits = @Organisation.Instance.UserCreditsPerWeek;
-    const adminName = '@Organisation.Instance.AdminName';
-    const serviceAccountEmail = '@Organisation.Instance.ServiceAccountEmail';
-    const isAdmin = @User.IsInRole(Roles.Admin).ToString().ToLower();
+    const antiforgeryToken = '@(Antiforgery.GetAndStoreTokens(HttpContext).RequestToken)';
+    const presets = @Html.Raw(userGroup.PresetJson);
+    const history = @Html.Raw(JsonSerializer.Serialize(history));
+    const introText = @Html.Raw(JsonSerializer.Serialize(userGroup.IntroMessage));
+    const showPresetDetails = @userGroup.ShowPresetDetails.ToString().ToLowerInvariant();
+    const allowUploads = @userGroup.AllowUploads.ToString().ToLowerInvariant();
+    const reviewItems = @Html.Raw(JsonSerializer.Serialize(reviewItems));
+    const stopCommands = @Html.Raw(JsonSerializer.Serialize(userGroup.StopCommands));
+    let spendLimitReached = @limitReached.ToString().ToLowerInvariant();
   </script>
-  <script src="/js/templates.js" asp-append-version="true"></script>
-  <script src="/js/index.js" asp-append-version="true"></script>
+
+  @if (Environment.IsDevelopment()) {
+  <script src="/js/main.js"></script>
+  <script src="/js/presets.js"></script>
+  <script src="/js/history.js"></script>
+  <script src="/js/chat.js"></script>
+  <script src="/js/streaming.js"></script>
+  } else {
+  <script src="/js/site.js"></script>
+  }
 }

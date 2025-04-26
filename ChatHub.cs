@@ -1,12 +1,11 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 
-namespace TeacherAI;
+namespace OrgAI;
 
 public interface IChatClient
 {
-  Task Type(string token);
-  Task Feedback(string student, int index, int total);
+  Task Append(string chunk, string instanceId);
 }
 
 [Authorize]

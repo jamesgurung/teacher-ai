@@ -9,3 +9,6 @@
 [assembly: SuppressMessage("Design", "CA1054:URI-like parameters should not be strings", Justification = "Intentionally strings")]
 [assembly: SuppressMessage("Maintainability", "CA1515:Consider making public types internal", Justification = "SignalR requires public types at runtime")]
 [assembly: SuppressMessage("Style", "IDE0058:Expression value is never used", Justification = "Expression values not required")]
+[assembly: SuppressMessage("Style", "IDE0305:Simplify collection initialization", Justification = "Readability")]
+[assembly: SuppressMessage("Performance", "CA1861:Avoid constant arrays as arguments", Justification = "Readability")]
+[assembly: SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Secure randomness not needed")]

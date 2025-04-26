@@ -1,145 +1,191 @@
 ﻿using Azure;
 using Azure.Data.Tables;
 using System.Globalization;
-using System.Text.Json;
+using System.Text.Json.Serialization;
 
-namespace TeacherAI;
+namespace OrgAI;
 
-public class TableService(string domain)
+public static class TableService
 {
+  private static TableClient conversationsClient;
+  private static TableClient spendClient;
+  private static TableClient reviewClient;
+
   public static void Configure(string connectionString)
   {
-    client = new TableServiceClient(connectionString);
+    conversationsClient = new TableServiceClient(connectionString).GetTableClient("conversations");
+    spendClient = new TableServiceClient(connectionString).GetTableClient("spend");
+    reviewClient = new TableServiceClient(connectionString).GetTableClient("review");
   }
 
-  private static TableServiceClient client;
-
-  private static readonly JsonSerializerOptions _jsonOptions = new()
+  public static async Task WarmUpAsync()
   {
-    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-    WriteIndented = true
-  };
+    var nonExistentKey = "warmup";
+    await conversationsClient.QueryAsync<TableEntity>(o => o.PartitionKey == nonExistentKey).ToListAsync();
+    await spendClient.QueryAsync<TableEntity>(o => o.PartitionKey == nonExistentKey).ToListAsync();
+    await reviewClient.QueryAsync<TableEntity>(o => o.PartitionKey == nonExistentKey).ToListAsync();
+  }
 
-  public async Task LogChatAsync(string username, ChatRequest chatRequest, long ticks, int promptTokens, int completionTokens, string contentFilter)
+  public static async Task UpsertConversationAsync(ConversationEntity conversation)
   {
-    ArgumentNullException.ThrowIfNull(chatRequest);
-    var model = OpenAIModel.Dictionary[chatRequest.ModelType];
-    var table = client.GetTableClient("chatlog");
-    var entry = new ChatLog
+    ArgumentNullException.ThrowIfNull(conversation);
+    var table = conversationsClient;
+    await table.UpsertEntityAsync(conversation, TableUpdateMode.Replace);
+  }
+
+  public static async Task<bool> ConversationExistsAsync(string userEmail, string conversationId)
+  {
+    ArgumentException.ThrowIfNullOrEmpty(userEmail);
+    ArgumentException.ThrowIfNullOrEmpty(conversationId);
+    var entity = await conversationsClient.GetEntityIfExistsAsync<ConversationEntity>(userEmail, conversationId, select: [ "RowKey" ]);
+    return entity.HasValue;
+  }
+
+  public static async Task<ConversationEntity> GetConversationAsync(string userEmail, string conversationId)
+  {
+    ArgumentNullException.ThrowIfNull(userEmail);
+    ArgumentNullException.ThrowIfNull(conversationId);
+    var entity = await conversationsClient.GetEntityIfExistsAsync<ConversationEntity>(userEmail, conversationId);
+    if (!entity.HasValue || entity.Value.IsDeleted)
     {
-      PartitionKey = domain,
-      RowKey = $"{username}_{ticks}",
-      Chat = JsonSerializer.Serialize(chatRequest.Messages, _jsonOptions),
-      Template = chatRequest.TemplateId,
-      Model = model.Name,
-      Temperature = chatRequest.Temperature,
-      UserPrompt = chatRequest.Messages.LastOrDefault(o => o.Role == "user")?.Content,
-      Completion = chatRequest.Messages.Last().Role == "assistant" ? chatRequest.Messages.Last().Content : null,
-      Cost = (double)((promptTokens * model.CostPerPromptToken) + (completionTokens * model.CostPerCompletionToken)),
-      ConversationId = chatRequest.ConversationId,
-      ContentFilter = contentFilter
+      throw new InvalidOperationException("Conversation not found");
+    }
+    return entity.Value;
+  }
+
+  public static async Task<List<ConversationEntity>> GetConversationsAsync(string userEmail, bool basicDataOnly)
+  {
+    ArgumentNullException.ThrowIfNull(userEmail);
+    var query = conversationsClient.QueryAsync<ConversationEntity>(c => c.PartitionKey == userEmail && !c.IsDeleted,
+      select: basicDataOnly ? ["RowKey", "Title", "Timestamp"] : null);
+    var conversations = await query.ToListAsync();
+    return conversations.OrderByDescending(o => o.Timestamp).ToList();
+  }
+
+  public static async Task<List<ReviewEntity>> GetReviewEntitiesAsync()
+  {
+    var query = reviewClient.QueryAsync<ReviewEntity>(select: ["RowKey", "User", "Title", "Timestamp"]);
+    var reviewEntities = await query.ToListAsync();
+    return reviewEntities.OrderByDescending(o => o.Timestamp).ToList();
+  }
+
+  public static async Task UpsertReviewEntityAsync(ConversationEntity conversation)
+  {
+    ArgumentNullException.ThrowIfNull(conversation);
+    var reviewItem = new ReviewEntity
+    {
+      PartitionKey = nameof(ReviewEntity),
+      RowKey = conversation.RowKey,
+      User = conversation.PartitionKey,
+      Title = conversation.Title
     };
-    await table.AddEntityAsync(entry);
+    await reviewClient.UpsertEntityAsync(reviewItem, TableUpdateMode.Replace);
   }
 
-  public async Task<double> CalculateUsageAsync(string username)
+  public static async Task DeleteReviewEntityAsync(string conversationId)
   {
-    var table = client.GetTableClient("chatlog");
-    var lastMonday = DateTime.UtcNow.Date.AddDays(-(((int)DateTime.UtcNow.DayOfWeek + 6) % 7));
-    var start = $"{username}_{lastMonday.Ticks}";
-    var end = $"{username}_{DateTime.UtcNow.AddDays(1).Ticks}";
-    var results = await table.QueryAsync<ChatLog>(
-      filter: o => o.PartitionKey == domain && o.RowKey.CompareTo(start) >= 0 && o.RowKey.CompareTo(end) < 0 && o.Model != "credits",
-      select: [nameof(ChatLog.Cost)]
-    ).ToListAsync();
-    return results.Sum(o => o.Cost);
+    ArgumentNullException.ThrowIfNull(conversationId);
+    await reviewClient.DeleteEntityAsync(nameof(ReviewEntity), conversationId);
   }
 
-  public async Task<double> CalculateTotalSpendAsync(int days)
+  public static async Task DeleteConversationAsync(string userEmail, string conversationId)
   {
-    var table = client.GetTableClient("chatlog");
-    var start = DateTime.UtcNow.AddDays(-days);
-    var results = await table.QueryAsync<ChatLog>(
-      filter: o => o.PartitionKey == domain && o.Timestamp >= start && o.Model != "credits",
-      select: [nameof(ChatLog.Cost)]
-    ).ToListAsync();
-    return results.Sum(o => o.Cost);
+    ArgumentNullException.ThrowIfNull(userEmail);
+    ArgumentNullException.ThrowIfNull(conversationId);
+    await conversationsClient.DeleteEntityAsync(userEmail, conversationId);
   }
 
-  public async Task AddCreditsAsync(string username, int credits)
+  public static async Task<decimal> RecordSpendAsync(string userEmail, decimal amount)
   {
-    var table = client.GetTableClient("chatlog");
-    var entry = new ChatLog
+    ArgumentNullException.ThrowIfNull(userEmail);
+    var weekStart = GetCurrentWeekStart();
+    var userSpend = await spendClient.GetEntityIfExistsAsync<SpendEntity>(weekStart, userEmail);
+    if (userSpend.HasValue)
     {
-      PartitionKey = domain,
-      RowKey = $"{username}_{DateTime.UtcNow.Ticks}",
-      Model = "credits",
-      Cost = -credits
-    };
-    await table.AddEntityAsync(entry);
-  }
-
-  public async Task<List<List<ChatLog>>> GetRecentChatsAsync(int n)
-  {
-    var table = client.GetTableClient("chatlog");
-    var start = DateTime.UtcNow.AddDays(-3);
-    var results = await table.QueryAsync<ChatLog>(
-      filter: o => o.PartitionKey == domain && o.Timestamp >= start && o.Model != "credits"
-    ).ToListAsync();
-    return results.Select(o => new { Chat = o, Ticks = long.Parse(o.RowKey.Split('_')[1], CultureInfo.InvariantCulture) }).Where(o => o.Ticks >= start.Ticks)
-      .OrderByDescending(o => o.Ticks)
-      .GroupBy(o => o.Chat.ConversationId).Select(o => o.Reverse().Select(o => o.Chat).ToList()).Take(n).ToList();
-  }
-
-  public async Task<List<string>> GetLeaderboardAsync()
-  {
-    var table = client.GetTableClient("chatlog");
-    var lastMonday = DateTime.UtcNow.Date.AddDays(-(((int)DateTime.UtcNow.DayOfWeek + 6) % 7));
-    var items = await table.QueryAsync<ChatLog>(
-      filter: o => o.PartitionKey == domain && o.Timestamp >= lastMonday && o.Model != "credits"
-    ).ToListAsync();
-    var results = items.Select(o => new
+      var existingSpend = decimal.Parse(userSpend.Value.Spent, CultureInfo.InvariantCulture);
+      var newSpend = existingSpend + amount;
+      userSpend.Value.Spent = newSpend.ToString(CultureInfo.InvariantCulture);
+      await spendClient.UpdateEntityAsync(userSpend.Value, userSpend.Value.ETag);
+      return newSpend;
+    }
+    else
     {
-      Chat = o,
-      Username = o.RowKey.Split('_')[0],
-      Ticks = long.Parse(o.RowKey.Split('_')[1], CultureInfo.InvariantCulture)
-    })
-      .Where(o => o.Ticks >= lastMonday.Ticks)
-      .GroupBy(o => o.Username).Select(o => new
-      {
-        User = o.Key,
-        Words = o.Sum(c => CountWords(c.Chat.Completion)),
-        Chats = o.DistinctBy(o => o.Chat.ConversationId).Count(),
-        Credits = o.Sum(c => c.Chat.Cost)
-      })
-      .OrderByDescending(o => o.Words).ToList();
-    var totals = $"| *Total* | *{results.Sum(o => o.Words)}* | *{results.Sum(o => o.Chats)}* | *{Math.Round(results.Sum(o => o.Credits), 0, MidpointRounding.AwayFromZero)}* |";
-    return results.Select(o => $"| {o.User} | {o.Words} | {o.Chats} | {Math.Round(o.Credits, 0, MidpointRounding.AwayFromZero)} |").Append(totals).ToList();
+      var newSpend = new SpendEntity { PartitionKey = weekStart, RowKey = userEmail, Spent = amount.ToString(CultureInfo.InvariantCulture) };
+      await spendClient.AddEntityAsync(newSpend);
+      return amount;
+    }
   }
 
-  private static readonly char[] separators = [' ', ',', '.', ';', ':', '-', '\n', '\r', '\t'];
-  private static int CountWords(string text)
+  public static async Task<decimal> GetSpendAsync(string userEmail)
   {
-    return text?.Split(separators, StringSplitOptions.RemoveEmptyEntries).Length ?? 0;
+    ArgumentNullException.ThrowIfNull(userEmail);
+    var weekStart = GetCurrentWeekStart();
+    var userSpend = await spendClient.GetEntityIfExistsAsync<SpendEntity>(weekStart, userEmail);
+    return userSpend.HasValue ? decimal.Parse(userSpend.Value.Spent, CultureInfo.InvariantCulture) : 0m;
+  }
+
+  private static string GetCurrentWeekStart()
+  {
+    var now = DateTime.UtcNow;
+    var startOfWeek = now.AddDays(-(int)now.DayOfWeek);
+    return startOfWeek.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
   }
 }
 
-public class ChatLog : ITableEntity
+public class ConversationEntity : ITableEntity
 {
-  public string PartitionKey { get; set; } // Domain
-  public string RowKey { get; set; }       // Username_Ticks
+  [JsonIgnore]
+  public string PartitionKey { get; set; }
+  [JsonPropertyName("id")]
+  public string RowKey { get; set; }
+  [JsonIgnore]
+  public DateTimeOffset? Timestamp { get; set; }
+  [JsonIgnore]
+  public ETag ETag { get; set; }
+
+  [JsonPropertyName("title")]
+  public string Title { get; set; }
+  [JsonIgnore]
+  public string Cost { get; set; }
+  [JsonIgnore]
+  public bool IsDeleted { get; set; }
+
+  public ConversationEntity() { }
+
+  public ConversationEntity(string userEmail, string conversationId, string title, decimal cost)
+  {
+    PartitionKey = userEmail;
+    RowKey = conversationId;
+    Title = title;
+    Cost = cost.ToString(CultureInfo.InvariantCulture);
+  }
+}
+
+public class SpendEntity : ITableEntity
+{
+  public string PartitionKey { get; set; }
+  public string RowKey { get; set; }
   public DateTimeOffset? Timestamp { get; set; }
   public ETag ETag { get; set; }
 
-  public string Chat { get; set; }
-  public string Template { get; set; }
-  public string Model { get; set; }
-  public double? Temperature { get; set; }
-  public string UserPrompt { get; set; }
-  public string Completion { get; set; }
-  public string ConversationId { get; set; }
-  public string ContentFilter { get; set; }
-  public double Cost { get; set; }
+  public string Spent { get; set; }
+}
+
+public class ReviewEntity : ITableEntity
+{
+  [JsonIgnore]
+  public string PartitionKey { get; set; }
+  [JsonPropertyName("id")]
+  public string RowKey { get; set; }
+  [JsonIgnore]
+  public DateTimeOffset? Timestamp { get; set; }
+  [JsonIgnore]
+  public ETag ETag { get; set; }
+
+  [JsonPropertyName("user")]
+  public string User { get; set; }
+  [JsonPropertyName("title")]
+  public string Title { get; set; }
 }
 
 public static class QueryExtensions

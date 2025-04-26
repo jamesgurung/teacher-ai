@@ -1,53 +1,132 @@
-# Teacher AI
+# Organisation AI
 
-This is a web app which allows teachers to submit prompts to OpenAI models.
+Organisation AI is a free, open-source web application that empowers your entire organisation with access to advanced AI chat capabilities&mdash;without the burden of costly per-user licenses.
 
-It is a thin wrapper around OpenAI GPT-4o with [pre-written prompts](/wwwroot/js/templates.js) to assist teachers with common educational and administrative tasks. There is also experimental support for bulk marking of student work.
+Bring your own OpenAI key and deploy effortlessly to Microsoft Azure.
 
-![Preview of Teacher AI](preview.gif)
+![Screenshot of Organisation AI](examples/screenshot.png)
 
-## Setup
+Originally known as *Teacher AI* for its focus on supporting staff in schools, this app has been upgraded to meet the needs of any organisation, from businesses to nonprofits.
 
-1. Create a general purpose v2 storage account in Microsoft Azure, and within it create a table called `chatlog`.
+### Features
+
+* A clean, professional chat interface
+* Access to the latest OpenAI language models
+* Customisable prompt presets for different teams
+* Web search capabilities
+* Understanding of uploaded images
+* Document search using vector stores
+* Chat history
+* Automated content moderation and manual review
+* Configurable weekly spend limits
+* Support for all screen sizes, including mobile
+* Single sign-on (SSO) using Microsoft 365
+
+### Setup
+
+1. Create a general purpose v2 storage account in Microsoft Azure, and within it create:
+    * Tables: `conversations`, `spend`, and `review`
+    * Blobs: `conversations` and `config`
  
 2. Create an Azure app registration.
-    * Name - `Teacher AI`
-    * Redirect URIs - `https://<app-website-domain>/signin-oidc` and `https://<app-website-domain>/auth/authorise-service-account/done`
+    * Name - `Organisation AI`
+    * Redirect URIs - `https://<app-website-domain>/signin-oidc`
     * Implicit grant - `ID tokens`
     * Supported account types - `Accounts in this organizational directory only`
-    * Allow public client flows - `Yes`
-    * Client secrets - create a new secret and save the key
-    * API permissions - `Microsoft Graph - User.Read` and `Microsoft Graph - Files.ReadWrite.All`
+    * API permissions - `Microsoft Graph - User.Read`
     * Token configuration - add optional claim of type `ID`: `upn`
 
-3. Create an OpenAI account.
+3. Create an OpenAI account and generate an API key.
 
-4. Create an Azure App Service web app, and configure the following settings:
+4. Create an Azure App Service web app, and configure the following environment variables:
 
     * `Organisation__Name` - the name of your organisation
-    * `Organisation__AdminName` - the name of the user who will administrate the Teacher AI app
-    * `Organisation__AdminEmail` - the email address of the admin user
-    * `Organisation__ServiceAccountEmail` - the email address of the service account which will be used to access Excel spreadsheets
-    * `Organisation__AppWebsite` - the URL where this app will be hosted
-    * `Organisation__Domain` - your organisation's domain name
-    * `Organisation__UserCreditsPerWeek` - the number of AI credits to assign each user per week
+    * `Organisation__AppWebsite` - the host name where this app will be hosted, e.g. `example.com`
+    * `Organisation__UserMaxWeeklySpend` - the amount that each user is allowed to spend each week
+    * `Organisation__Reviewers__0` - the email address of a user to give reviewer access, which allows them to review all users' AI conversations (subsequent reviewers can be configured by adding additional items with incrementing indices)
+    * `Organisation__CountryCode` - your country code, e.g. `GB` for Great Britain (used for localised web search)
+    * `Organisation__City` - your city name (used for localised web search)
+    * `Organisation__Timezone` - your timezone, e.g. `Europe/London` (used for localised web search)
     * `Azure__ClientId` - the client ID of your Azure app registration
-    * `Azure__ClientSecret` - the client secret of your Azure app registration
     * `Azure__TenantId` - your Azure tenant ID
     * `Azure__StorageAccountName` - the name of your Azure Storage account
     * `Azure__StorageAccountKey` - the key for your Azure Storage account
-    * `OpenAI__Key` - the API key for your OpenAI account
-    * `OpenAI__Models__0__Type` - set to `small`
-    * `OpenAI__Models__0__Name` - the name of the small OpenAI model to use, e.g. `gpt-4o-mini`
-    * `OpenAI__Models__0__CostPerPromptToken` - the credit cost per prompt token for the small model
-    * `OpenAI__Models__0__CostPerCompletionToken` - the credit cost per completion token for the small model
-    * `OpenAI__Models__1__Type` - set to `default`
-    * `OpenAI__Models__1__Name` - the name of the default OpenAI model to use, e.g. `gpt-4o`
-    * `OpenAI__Models__1__CostPerPromptToken` - the credit cost per prompt token for the default model
-    * `OpenAI__Models__1__CostPerCompletionToken` - the credit cost per completion token for the default model
- 
-5. Authorise a service account, which the app will use to access Excel spreadsheets when they are shared on OneDrive.
+    * `OpenAI__ApiKey` - the API key for your OpenAI account
+    * `OpenAI__CostPer1KFileSearches` - the OpenAI credit cost per 1K file searches
+    * `OpenAI__TitleSummarisationModel` - the model which will be used to summarise titles, e.g. `gpt-4.1-nano`
+    * `OpenAI__Models__0__Name` - the name of an OpenAI model you would like to make available, e.g. `gpt-4.1` (subsequent models can be configured by adding additional items with incrementing indices)
+    * `OpenAI__Models__0__CostPer1MInputTokens` - the model cost per 1M input tokens
+    * `OpenAI__Models__0__CostPer1MCachedInputTokens` - the model cost per 1M cached input tokens
+    * `OpenAI__Models__0__CostPer1MOutputTokens` - the model cost per 1M output tokens
+    * `OpenAI__Models__0__CostPer1KWebSearches` - the model cost per 1K web searches (if the model does not support web searches, omit this setting)
 
-    * Sign in as the admin user, and navigate to `/auth/authorise-service-account`
-    * When prompted to sign in with a Microsoft account, select a purpose-made service account (**not** your admin account). Consent to the required permissions.
-    * You will be redirected to a page which displays the refresh token. Copy this and save it in the web app's `Azure__RefreshToken` setting.
+5. Within the `config` blob, create a file `users.csv` with the following format:
+
+    ```csv
+    Email,UserGroup
+    test@example.com,staff
+    ```
+
+6. For each user group configured in `users.csv`, create a file `<usergroup>.json` with the following format:
+
+    ```json
+    {
+      "allowUploads": true,
+      "introMessage": "This service is for work-related queries only.",
+      "presets": [
+        {
+          "id": "default",
+          "title": null,
+          "category": null,
+          "introduction": null,
+          "instructions": "You are a helpful AI assistant.",
+          "model": "gpt-4.1",
+          "temperature": 0.2,
+          "reasoningEffort": null,
+          "webSearchEnabled": false,
+          "vectorStoreId": null
+        }
+      ],
+      "showPresetDetails": true,
+      "stopCommands": [
+        "token": "[offtopic]",
+        "message": "This is off-topic."
+      ]
+    }
+    ```
+
+    The settings are:
+
+    * `allowUploads` - whether users in this group can upload files
+    * `introMessage` - a message to display to users on the homepage in Markdown format, e.g. you may include a link to your organisation's AI policy
+    * `presets` - an array of preset prompt templates that will be available to users from the sidebar
+        * `id` - the ID of the preset, which is a unique string without spaces; use the ID `default` to specify the default preset which loads at the start
+        * `title` - the title of the preset, displayed in the sidebar
+        * `category` - the category of the preset, displayed as a heading in the sidebar
+        * `introduction` - the message to display when this preset is selected, in Markdown format (note that this is not sent to the language model)
+        * `instructions` - the system instructions to send to the language model along with the user's message
+        * `model` - the OpenAI model to use for this preset, as configured above
+        * `temperature` (optional) - the temperature to use
+        * `reasoningEffort` (optional) - the reasoning effort to use, where supported by the model
+        * `webSearchEnabled` (optional) - whether web searches are enabled
+        * `vectorStoreId` (optional) - the ID of the OpenAI vector store to use for this preset
+    * `showPresetDetails` - whether to show the preset details, such as the system instructions and model name, to the user
+    * `stopCommands` - an array of tokens that, when received from the language model, will stop the conversation and display a customised message; this needs to be used in conjunction with the model `instructions` above
+
+    Our [examples](examples) folder contains sample configuration files for a secondary school.
+
+7. Deploy the app:
+    * Fork this repo to your GitHub account
+    * In the Azure Portal, open your App Service
+    * Go to the Deployment Center
+    * Choose GitHub and sign in if needed
+    * Select your repo and branch, then click Save
+    * GitHub Actions will build and deploy automatically
+
+### Contributing
+
+If you have a question or feature request, please open an issue.
+
+To contribute improvements to this project, or to adapt the code for the specific needs of your organisation, you are welcome to fork the repository.
+
+Pull requests are welcome; please open an issue first to discuss.

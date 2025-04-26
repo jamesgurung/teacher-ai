@@ -1,11 +1,30 @@
-﻿namespace TeacherAI;
+﻿namespace OrgAI;
 
-public class OpenAIModel
+public class OpenAIModelConfig
 {
-  public static Dictionary<string, OpenAIModel> Dictionary { get; set; }
-
-  public string Type { get; init; }
   public string Name { get; init; }
-  public decimal CostPerPromptToken { get; init; }
-  public decimal CostPerCompletionToken { get; init; }
+  public decimal CostPer1MInputTokens { get; init; }
+  public decimal CostPer1MCachedInputTokens { get; init; }
+  public decimal CostPer1MOutputTokens { get; init; }
+  public decimal? CostPer1KWebSearches { get; init; }
+}
+
+public class OpenAIConfig
+{
+  public static OpenAIConfig Instance { get; set; }
+
+  public string ApiKey { get; set; }
+  public decimal CostPer1KFileSearches { get; set; }
+  public string TitleSummarisationModel { get; set; }
+
+  private IList<OpenAIModelConfig> _models;
+  public IList<OpenAIModelConfig> Models
+  {
+    get => _models;
+    set {
+      _models = value;
+      ModelDictionary = _models.ToDictionary(m => m.Name, m => m);
+    }
+  }
+  public Dictionary<string, OpenAIModelConfig> ModelDictionary { get; set; }
 }
