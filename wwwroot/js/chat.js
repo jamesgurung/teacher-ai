@@ -60,7 +60,7 @@ function enableInput() {
   userInput.placeholder = 'Type your message here...';
   fileLabel.style.opacity = '1';
   fileLabel.style.pointerEvents = 'auto';
-  userInput.focus();
+  focusInput();
 }
 
 async function chat(prompt, files) {
@@ -222,7 +222,7 @@ async function handleFileSelection(e) {
   if (selectedFiles.length + validFiles.length > 3) {
     alert('Maximum 3 files allowed');
     e.target.value = '';
-    userInput.focus();
+    focusInput();
     return;
   }
 
@@ -230,7 +230,7 @@ async function handleFileSelection(e) {
   selectedFiles = [...selectedFiles, ...processedFiles];
   updateFilePreview();
   e.target.value = '';
-  userInput.focus();
+  focusInput();
 }
 
 function updateFilePreview() {

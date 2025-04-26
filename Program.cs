@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.SignalR;
@@ -5,6 +6,8 @@ using OrgAI;
 using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddDataProtection().PersistKeysToAzureBlobStorage(new Uri(builder.Configuration["Azure:DataProtectionBlobUri"]));
 
 var storageAccountName = builder.Configuration["Azure:StorageAccountName"];
 var storageAccountKey = builder.Configuration["Azure:StorageAccountKey"];

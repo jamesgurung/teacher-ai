@@ -118,6 +118,12 @@ function wrapTables(el) {
   });
 }
 
+function focusInput() {
+  userInput.readOnly = true;
+  userInput.focus();
+  setTimeout(() => { userInput.readOnly = false; }, 10);
+}
+
 async function init() {
   chatForm.addEventListener('submit', handleSubmit);
   mobileSidebarToggle.addEventListener('click', toggleSidebar);
@@ -176,7 +182,7 @@ async function init() {
   await displayPresets();
   await refreshHistoryUI();
   startNewChat();
-  userInput.focus();
+  focusInput();
 }
 
 document.addEventListener('DOMContentLoaded', init);

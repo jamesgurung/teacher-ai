@@ -24,11 +24,15 @@ Originally known as *Teacher AI* for its focus on supporting staff in schools, t
 
 ### Setup
 
-1. Create a general purpose v2 storage account in Microsoft Azure, and within it create:
+1. Create an OpenAI account and generate an API key.
+
+2. Create a general purpose v2 storage account in Microsoft Azure, and within it create:
     * Tables: `conversations`, `spend`, and `review`
-    * Blobs: `conversations` and `config`
+    * Blob containers: `conversations` and `config`
+
+3. Within the `config` blob container, upload a blank file `keys.xml`. Generate a SAS URL for this file with read/write permissions and a distant expiry. This will be used to store the application's data protection keys so that auth cookies persist across app restarts.
  
-2. Create an Azure app registration.
+4. Create an Azure app registration.
     * Name - `Organisation AI`
     * Redirect URIs - `https://<app-website-domain>/signin-oidc`
     * Implicit grant - `ID tokens`
@@ -36,9 +40,15 @@ Originally known as *Teacher AI* for its focus on supporting staff in schools, t
     * API permissions - `Microsoft Graph - User.Read`
     * Token configuration - add optional claim of type `ID`: `upn`
 
-3. Create an OpenAI account and generate an API key.
+5. Create an Azure App Service web app.
+    * Publish mode - Container
+    * Operating system - Linux
+    * Image source - Other container registries
+    * Docker Hub access type - Public
+    * Image and tag - `jamesgurung/organisation-ai:latest`
+    * Startup command: (blank)
 
-4. Create an Azure App Service web app, and configure the following environment variables:
+6. Configure the following environment variables for the web app:
 
     * `Organisation__Name` - the name of your organisation
     * `Organisation__AppWebsite` - the host name where this app will be hosted, e.g. `example.com`
@@ -51,6 +61,7 @@ Originally known as *Teacher AI* for its focus on supporting staff in schools, t
     * `Azure__TenantId` - your Azure tenant ID
     * `Azure__StorageAccountName` - the name of your Azure Storage account
     * `Azure__StorageAccountKey` - the key for your Azure Storage account
+    * `Azure__DataProtectionBlobUri` - the SAS URL for the keys file you created earlier
     * `OpenAI__ApiKey` - the API key for your OpenAI account
     * `OpenAI__CostPer1KFileSearches` - the OpenAI credit cost per 1K file searches
     * `OpenAI__TitleSummarisationModel` - the model which will be used to summarise titles, e.g. `gpt-4.1-nano`
@@ -60,14 +71,14 @@ Originally known as *Teacher AI* for its focus on supporting staff in schools, t
     * `OpenAI__Models__0__CostPer1MOutputTokens` - the model cost per 1M output tokens
     * `OpenAI__Models__0__CostPer1KWebSearches` - the model cost per 1K web searches (if the model does not support web searches, omit this setting)
 
-5. Within the `config` blob, create a file `users.csv` with the following format:
+7. Within the `config` blob, create a file `users.csv` with the following format:
 
     ```csv
     Email,UserGroup
     test@example.com,staff
     ```
 
-6. For each user group configured in `users.csv`, create a file `<usergroup>.json` with the following format:
+8. For each user group configured in `users.csv`, create a file `<usergroup>.json` with the following format:
 
     ```json
     {
@@ -95,6 +106,8 @@ Originally known as *Teacher AI* for its focus on supporting staff in schools, t
     }
     ```
 
+    Our [examples](examples) folder contains some sample configuration files for a secondary school.
+
     The settings are:
 
     * `allowUploads` - whether users in this group can upload files
@@ -113,15 +126,7 @@ Originally known as *Teacher AI* for its focus on supporting staff in schools, t
     * `showPresetDetails` - whether to show the preset details, such as the system instructions and model name, to the user
     * `stopCommands` - an array of tokens that, when received from the language model, will stop the conversation and display a customised message; this needs to be used in conjunction with the model `instructions` above
 
-    Our [examples](examples) folder contains sample configuration files for a secondary school.
-
-7. Deploy the app:
-    * Fork this repo to your GitHub account
-    * In the Azure Portal, open your App Service
-    * Go to the Deployment Center
-    * Choose GitHub and sign in if needed
-    * Select your repo and branch, then click Save
-    * GitHub Actions will build and deploy automatically
+9. Restart the web app.
 
 ### Contributing
 
