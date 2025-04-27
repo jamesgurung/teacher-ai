@@ -1,11 +1,19 @@
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http.Json;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.SignalR;
 using OrgAI;
 using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.Configure<ForwardedHeadersOptions>(o =>
+{
+  o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+  o.KnownNetworks.Clear();
+  o.KnownProxies.Clear();
+});
 
 builder.Services.AddDataProtection().PersistKeysToAzureBlobStorage(new Uri(builder.Configuration["Azure:DataProtectionBlobUri"]));
 
@@ -64,6 +72,7 @@ if (!app.Environment.IsDevelopment())
   });
 }
 
+app.UseForwardedHeaders();
 app.UseResponseCompression();
 app.UseHttpsRedirection();
 app.UseWebOptimizer();
