@@ -31,54 +31,16 @@ Originally known as *Teacher AI* for its focus on supporting staff in schools, t
     * Blob containers: `conversations` and `config`
 
 3. Within the `config` blob container, upload a blank file `keys.xml`. Generate a SAS URL for this file with read/write permissions and a distant expiry. This will be used to store the application's data protection keys so that auth cookies persist across app restarts.
- 
-4. Create an Azure app registration.
-    * Name - `Organisation AI`
-    * Redirect URIs - `https://<app-website-domain>/signin-oidc`
-    * Implicit grant - `ID tokens`
-    * Supported account types - `Accounts in this organizational directory only`
-    * API permissions - `Microsoft Graph - User.Read`
-    * Token configuration - add optional claim of type `ID`: `upn`
 
-5. Create an Azure App Service web app.
-    * Publish mode - Container
-    * Operating system - Linux
-    * Image source - Other container registries
-    * Docker Hub access type - Public
-    * Image and tag - `jamesgurung/organisation-ai:latest`
-    * Startup command: (blank)
 
-6. Configure the following environment variables for the web app:
-
-    * `Organisation__Name` - the name of your organisation
-    * `Organisation__AppWebsite` - the host name where this app will be hosted, e.g. `example.com`
-    * `Organisation__UserMaxWeeklySpend` - the amount that each user is allowed to spend each week
-    * `Organisation__Reviewers__0` - the email address of a user to give reviewer access, which allows them to review all users' AI conversations (subsequent reviewers can be configured by adding additional items with incrementing indices)
-    * `Organisation__CountryCode` - your country code, e.g. `GB` for Great Britain (used for localised web search)
-    * `Organisation__City` - your city name (used for localised web search)
-    * `Organisation__Timezone` - your timezone, e.g. `Europe/London` (used for localised web search)
-    * `Azure__ClientId` - the client ID of your Azure app registration
-    * `Azure__TenantId` - your Azure tenant ID
-    * `Azure__StorageAccountName` - the name of your Azure Storage account
-    * `Azure__StorageAccountKey` - the key for your Azure Storage account
-    * `Azure__DataProtectionBlobUri` - the SAS URL for the keys file you created earlier
-    * `OpenAI__ApiKey` - the API key for your OpenAI account
-    * `OpenAI__CostPer1KFileSearches` - the OpenAI credit cost per 1K file searches
-    * `OpenAI__TitleSummarisationModel` - the model which will be used to summarise titles, e.g. `gpt-4.1-nano`
-    * `OpenAI__Models__0__Name` - the name of an OpenAI model you would like to make available, e.g. `gpt-4.1` (subsequent models can be configured by adding additional items with incrementing indices)
-    * `OpenAI__Models__0__CostPer1MInputTokens` - the model cost per 1M input tokens
-    * `OpenAI__Models__0__CostPer1MCachedInputTokens` - the model cost per 1M cached input tokens
-    * `OpenAI__Models__0__CostPer1MOutputTokens` - the model cost per 1M output tokens
-    * `OpenAI__Models__0__CostPer1KWebSearches` - the model cost per 1K web searches (if the model does not support web searches, omit this setting)
-
-7. Within the `config` blob, create a file `users.csv` with the following format:
+4. Within the `config` blob container, create a file `users.csv` with the following format:
 
     ```csv
     Email,UserGroup
     test@example.com,staff
     ```
 
-8. For each user group configured in `users.csv`, create a file `<usergroup>.json` with the following format:
+5. For each user group configured in `users.csv`, create a file `<usergroup>.json` with the following format:
 
     ```json
     {
@@ -125,8 +87,45 @@ Originally known as *Teacher AI* for its focus on supporting staff in schools, t
         * `vectorStoreId` (optional) - the ID of the OpenAI vector store to use for this preset
     * `showPresetDetails` - whether to show the preset details, such as the system instructions and model name, to the user
     * `stopCommands` - an array of tokens that, when received from the language model, will stop the conversation and display a customised message; this needs to be used in conjunction with the model `instructions` above
+ 
+6. Create an Azure app registration.
+    * Name - `Organisation AI`
+    * Redirect URI - `https://<app-website-domain>/signin-oidc`
+    * Implicit grant - ID tokens
+    * Supported account types - Accounts in this organizational directory only
+    * API permissions - `Microsoft Graph - User.Read`
+    * Token configuration - add an optional claim of type ID: `upn`
 
-9. Restart the web app.
+7. Create an Azure App Service web app.
+    * Publish mode - Container
+    * Operating system - Linux
+    * Image source - Other container registries
+    * Docker Hub access type - Public
+    * Image and tag - `jamesgurung/organisation-ai:latest`
+    * Startup command: (blank)
+
+8. Configure the following environment variables for the web app:
+
+    * `Organisation__Name` - the name of your organisation
+    * `Organisation__AppWebsite` - the host name where this app will be hosted, e.g. `example.com`
+    * `Organisation__UserMaxWeeklySpend` - the amount that each user is allowed to spend each week
+    * `Organisation__Reviewers__0` - the email address of a user to give reviewer access, which allows them to review all users' AI conversations (subsequent reviewers can be configured by adding additional items with incrementing indices)
+    * `Organisation__CountryCode` - your country code, e.g. `GB` for Great Britain (used for localised web search)
+    * `Organisation__City` - your city name (used for localised web search)
+    * `Organisation__Timezone` - your timezone, e.g. `Europe/London` (used for localised web search)
+    * `Azure__ClientId` - the client ID of your Azure app registration
+    * `Azure__TenantId` - your Azure tenant ID
+    * `Azure__StorageAccountName` - the name of your Azure Storage account
+    * `Azure__StorageAccountKey` - the key for your Azure Storage account
+    * `Azure__DataProtectionBlobUri` - the SAS URL for the keys file you created earlier
+    * `OpenAI__ApiKey` - the API key for your OpenAI account
+    * `OpenAI__CostPer1KFileSearches` - the OpenAI credit cost per 1K file searches
+    * `OpenAI__TitleSummarisationModel` - the model which will be used to summarise titles, e.g. `gpt-4.1-nano`
+    * `OpenAI__Models__0__Name` - the name of an OpenAI model you would like to make available, e.g. `gpt-4.1` (subsequent models can be configured by adding additional items with incrementing indices)
+    * `OpenAI__Models__0__CostPer1MInputTokens` - the model cost per 1M input tokens
+    * `OpenAI__Models__0__CostPer1MCachedInputTokens` - the model cost per 1M cached input tokens
+    * `OpenAI__Models__0__CostPer1MOutputTokens` - the model cost per 1M output tokens
+    * `OpenAI__Models__0__CostPer1KWebSearches` - the model cost per 1K web searches (if the model does not support web searches, omit this setting)
 
 ### Contributing
 
