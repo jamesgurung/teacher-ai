@@ -4,5 +4,8 @@ namespace OrgAI;
 
 public class EmailUserIdProvider : IUserIdProvider
 {
-  public string GetUserId(HubConnectionContext connection) => connection?.User?.Identity?.Name;
+  public string GetUserId(HubConnectionContext connection)
+  {
+    return connection?.User?.Identity?.Name;
+  }
 }

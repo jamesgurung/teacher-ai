@@ -63,7 +63,8 @@ public static class Api
 
         var moderationPrompt = string.IsNullOrEmpty(preset.Title) ? prompt : $"{preset.Title}:{MessageDelimeter}{prompt}";
         var moderationResult = await moderationClient.ClassifyTextAsync(moderationPrompt);
-        moderationFlagged = moderationResult.Value.Flagged;
+        moderationFlagged = typeof(ModerationResult).GetProperties().Select(p => p.GetValue(moderationResult.Value)).OfType<ModerationCategory>()
+          .Any(cat => cat.Flagged && cat.Score >= 0.7);
 
         if (moderationFlagged)
         {
@@ -76,7 +77,7 @@ public static class Api
           {
             EndUserId = id,
             Instructions = "The user will post a prompt. Do not respond to the prompt. Summarise it as succinctly as possible, in 3 words or less, for use as a conversation title. " +
-              "Use sentence case, starting the first word with a capital letter. Do not use punctuation. Prefer short words. " +
+              "The first word MUST start with a capital letter, and then use sentence case. Do not use punctuation. Prefer short words. " +
               "Try to capture the full context of the query, not just the task category. " +
               "Only respond with the plaintext title and nothing else (no introduction or conclusion).",
             Temperature = 0,
@@ -142,7 +143,7 @@ public static class Api
         }
       }
       conversation.Turns.Add(userTurn);
-      bool spendLimitReached = false;
+      var spendLimitReached = false;
       var streamer = hubContext.Clients.User(userEmail);
 
       if (moderationFlagged)
@@ -193,16 +194,16 @@ public static class Api
             case StreamingResponseOutputTextDeltaUpdate text:
               await streamer.Append(text.Delta, instanceId);
               break;
-            case StreamingResponseWebSearchCallInProgressUpdate _:
+            case StreamingResponseWebSearchCallInProgressUpdate:
               await streamer.Append("[web_search_in_progress]", instanceId);
               break;
-            case StreamingResponseWebSearchCallCompletedUpdate _:
+            case StreamingResponseWebSearchCallCompletedUpdate:
               await streamer.Append("[web_search_completed]", instanceId);
               break;
-            case StreamingResponseFileSearchCallSearchingUpdate _:
+            case StreamingResponseFileSearchCallSearchingUpdate:
               await streamer.Append("[file_search_in_progress]", instanceId);
               break;
-            case StreamingResponseFileSearchCallCompletedUpdate _:
+            case StreamingResponseFileSearchCallCompletedUpdate:
               await streamer.Append("[file_search_completed]", instanceId);
               break;
             case StreamingResponseCompletedUpdate completion:
@@ -294,7 +295,7 @@ public static class Api
   }
 }
 
-class ChatResponse
+public class ChatResponse
 {
   [JsonPropertyName("id"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
   public string Id { get; set; }

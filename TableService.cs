@@ -37,7 +37,7 @@ public static class TableService
   {
     ArgumentException.ThrowIfNullOrEmpty(userEmail);
     ArgumentException.ThrowIfNullOrEmpty(conversationId);
-    var entity = await conversationsClient.GetEntityIfExistsAsync<ConversationEntity>(userEmail, conversationId, select: [ "RowKey" ]);
+    var entity = await conversationsClient.GetEntityIfExistsAsync<ConversationEntity>(userEmail, conversationId, select: ["RowKey"]);
     return entity.HasValue;
   }
 
@@ -46,11 +46,7 @@ public static class TableService
     ArgumentNullException.ThrowIfNull(userEmail);
     ArgumentNullException.ThrowIfNull(conversationId);
     var entity = await conversationsClient.GetEntityIfExistsAsync<ConversationEntity>(userEmail, conversationId);
-    if (!entity.HasValue || entity.Value.IsDeleted)
-    {
-      throw new InvalidOperationException("Conversation not found");
-    }
-    return entity.Value;
+    return !entity.HasValue || entity.Value.IsDeleted ? throw new InvalidOperationException("Conversation not found") : entity.Value;
   }
 
   public static async Task<List<ConversationEntity>> GetConversationsAsync(string userEmail, bool basicDataOnly)

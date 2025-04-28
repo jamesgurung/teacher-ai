@@ -10,7 +10,8 @@ public class Conversation
   [JsonPropertyName("turns")]
   public IList<ConversationTurn> Turns { get; set; } = [];
 
-  public IList<ResponseItem> AsResponseItems() {
+  public IList<ResponseItem> AsResponseItems()
+  {
     var items = new List<ResponseItem>(Turns.Count);
     foreach (var turn in Turns)
     {

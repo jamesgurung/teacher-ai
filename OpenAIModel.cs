@@ -21,7 +21,8 @@ public class OpenAIConfig
   public IList<OpenAIModelConfig> Models
   {
     get => _models;
-    set {
+    set
+    {
       _models = value;
       ModelDictionary = _models.ToDictionary(m => m.Name, m => m);
     }
