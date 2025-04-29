@@ -76,10 +76,11 @@ public static class Api
           var summaryOptions = new ResponseCreationOptions
           {
             EndUserId = id,
-            Instructions = "The user will post a prompt. Do not respond to the prompt. Summarise it as succinctly as possible, in 3 words or less, for use as a conversation title. " +
+            Instructions = "The user will post a prompt. Do NOT respond to the prompt.\n\n" +
+              "**Summarise it as succinctly as possible, in 3 words or less, for use as a conversation title.**\n\n" +
               "The first word MUST start with a capital letter, and then use sentence case. Do not use punctuation. Prefer short words. " +
               "Try to capture the full context of the query, not just the task category. " +
-              "Only respond with the plaintext title and nothing else (no introduction or conclusion).",
+              "Only respond with the plaintext title (3 words or less) and nothing else (no introduction or conclusion).",
             Temperature = 0,
             StoredOutputEnabled = false
           };
@@ -213,8 +214,9 @@ public static class Api
               if (isFirstTurn)
               {
                 var summaryResponse = await summaryTask;
+                var title = string.Join(' ', summaryResponse.Value.GetOutputText().Split(' ', 5, StringSplitOptions.RemoveEmptyEntries).Take(4));
                 cost += CalculateCost(OpenAIConfig.Instance.ModelDictionary[OpenAIConfig.Instance.TitleSummarisationModel], summaryResponse.Value.Usage);
-                conversationEntity = new ConversationEntity(userEmail, id, summaryResponse.Value.GetOutputText(), cost);
+                conversationEntity = new ConversationEntity(userEmail, id, title, cost);
               }
               else
               {
@@ -238,7 +240,8 @@ public static class Api
       {
         Id = isFirstTurn ? id : null,
         Title = isFirstTurn ? conversationEntity.Title : null,
-        SpendLimitReached = spendLimitReached
+        SpendLimitReached = spendLimitReached,
+        Content = conversation.Turns[^1]
       });
     });
 
@@ -303,4 +306,6 @@ public class ChatResponse
   public string Title { get; set; }
   [JsonPropertyName("spendLimitReached")]
   public bool SpendLimitReached { get; set; }
+  [JsonPropertyName("content")]
+  public ConversationTurn Content { get; set; }
 }

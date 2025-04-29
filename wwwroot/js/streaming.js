@@ -4,7 +4,7 @@ let searchStatusElement = null;
 let textContainer = null;
 let instanceId = null;
 
-const connection = new signalR.HubConnectionBuilder().withUrl('/chat').withAutomaticReconnect().configureLogging(signalR.LogLevel.Warning).build();
+const connection = new signalR.HubConnectionBuilder().withUrl('/hub').withAutomaticReconnect().configureLogging(signalR.LogLevel.Warning).build();
 connection.start();
 document.addEventListener('visibilitychange', async () => {
   if (document.visibilityState === 'visible' && connection.state === signalR.HubConnectionState.Disconnected) await connection.start();

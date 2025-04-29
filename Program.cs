@@ -82,7 +82,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseAntiforgery();
 
-app.MapHub<ChatHub>("/chat");
+app.MapHub<ChatHub>("/hub");
 app.MapRazorPages();
 app.MapAuthPaths();
 app.MapApiPaths();

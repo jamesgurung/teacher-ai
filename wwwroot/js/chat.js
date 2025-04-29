@@ -79,7 +79,7 @@ async function chat(prompt, files) {
 
     const response = await fetch('/api/chat', { method: 'POST', headers, body: formData });
     removeTypingIndicator();
-
+    
     if (response.ok) {
       const data = await response.json();
       spendLimitReached = data.spendLimitReached;
@@ -91,7 +91,11 @@ async function chat(prompt, files) {
         const historyItem = createHistoryItem(conversationEntity);
         historyContainer.insertBefore(historyItem, historyContainer.firstChild);
       }
-      wrapTables(currentResponseElement);
+      if (currentResponseElement === null) {
+        currentResponseElement = addMessageToUI(data.content);
+      } else {
+        wrapTables(currentResponseElement);
+      }
       const classList = currentResponseElement.classList;
       if (!classList.contains('stop') && !classList.contains('error')) enableInput();
     } else {
@@ -175,6 +179,7 @@ function addMessageToUI(turn) {
 
   chatContentContainer.appendChild(messageDiv);
   scrollChatContainer();
+  return messageDiv;
 }
 
 function showStopMessage(messageDiv, stopCommand) {
