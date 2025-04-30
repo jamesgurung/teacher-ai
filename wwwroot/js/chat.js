@@ -96,6 +96,10 @@ async function chat(prompt, files) {
       } else {
         wrapTables(currentResponseElement);
       }
+      if (chatContentContainer.querySelectorAll('.user-message').length >= 6) {
+        longChatWarning.style.display = 'block';
+        scrollChatContainer();
+      }
       const classList = currentResponseElement.classList;
       if (!classList.contains('stop') && !classList.contains('error')) enableInput();
     } else {

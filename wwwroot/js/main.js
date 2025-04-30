@@ -29,6 +29,7 @@ const fileLabel = document.getElementById('file-label');
 const inputContainer = document.getElementById('input-container');
 const userElement = document.getElementById('user');
 const reviewBadge = document.getElementById('review-badge');
+const longChatWarning = document.getElementById('long-chat-warning');
 const smallScreenBreakpoint = 1200;
 
 const headers = { 'X-XSRF-TOKEN': antiforgeryToken };

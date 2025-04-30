@@ -85,6 +85,14 @@ button {
   border-bottom-color: var(--primary-color);
 }
 
+.large-screen {
+  display: none;
+}
+
+.small-screen {
+  display: inline;
+}
+
 @media (min-width: 1200px) {
   #sidebar {
     position: relative;
@@ -107,6 +115,14 @@ button {
 
   #new-chat-btn {
     width: 100%;
+  }
+
+  .large-screen {
+    display: inline;
+  }
+
+  .small-screen {
+    display: none;
   }
 }
 
@@ -922,4 +938,14 @@ button.resolve:disabled {
   border-left: 4px solid #e5c734;
   padding: 12px 15px;
   border-radius: 4px;
+}
+
+#long-chat-warning {
+  text-align: center;
+  margin: 0 auto;
+  background-color: var(--sidebar-bg);
+  width: fit-content;
+  padding: 4px 20px;
+  font-size: 9pt;
+  border-radius: 20px 20px 0 0
 }

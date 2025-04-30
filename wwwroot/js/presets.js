@@ -60,6 +60,7 @@ function applyPreset(preset, isReviewing) {
     }
   });
 
+  longChatWarning.style.display = 'none';
   inputContainer.style.display = isReviewing ? 'none' : 'block';
   userElement.style.display = 'none';
   settingsDisplay.style.display = showPresetDetails ? 'block' : 'none';
