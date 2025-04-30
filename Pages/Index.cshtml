@@ -9,8 +9,8 @@
   var spend = await spendTask;
   var history = await historyTask;
   var reviewItems = await reviewTask;
-  var limitReached = spend >= Organisation.Instance.UserMaxWeeklySpend;
   var userGroup = UserGroup.ConfigByGroupName[UserGroup.GroupNameByUserEmail[User.Identity.Name]];
+  var limitReached = spend >= userGroup.UserMaxWeeklySpend;
 }
 <div id="app-container">
   <div id="sidebar">

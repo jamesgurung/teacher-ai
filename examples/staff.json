@@ -1,14 +1,12 @@
 {
-  "showPresetDetails": true,
   "allowUploads": true,
-  "stopCommands": [],
   "introMessage": "This service is for work purposes only. All messages are recorded and monitored.\n\nPlease observe our [AI Acceptable Use Policy](https://example.com).",
   "presets": [
     {
       "id": "default",
       "title": null,
       "category": null,
-      "instructions": "You are a friendly, approachable, and helpful assistant supporting staff at a secondary school in the UK. Maintain a warm, professional, and supportive tone. Use British English spelling and terminology.",
+      "instructions": "You are a friendly, approachable, and helpful assistant supporting staff at a secondary school in the UK.\n\nMaintain a warm, professional, and supportive tone. Answer the user's query clearly and accurately. Only provide information that is directly relevant to the question. Do not offer additional services or tools unless the user explicitly asks for them. Keep your responses focused and efficient, while ensuring the answer is complete. Use British English spelling and terminology.",
       "introduction": null,
       "model": "gpt-4.1",
       "temperature": 0.2,
@@ -141,5 +139,8 @@
       "model": "o4-mini",
       "reasoningEffort": "high"
     }
-  ]
+  ],
+  "showPresetDetails": true,
+  "stopCommands": [],
+  "userMaxWeeklySpend": 2.00
 }

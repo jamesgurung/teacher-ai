@@ -22,5 +22,6 @@
       "token": "[WELLBEING]",
       "message": "# Your wellbeing matters.\n\nIt seems like you might be going through a tough moment. Remember, you're not alone, and help is always available. It's best to talk to someone you trust, such as a parent/carer or teacher, or reach out to a confidential helpline such as [Kooth](https://www.kooth.com) for immediate support."
     }
-  ]
+  ],
+  "userMaxWeeklySpend": 1.00
 }

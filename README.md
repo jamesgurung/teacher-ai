@@ -64,7 +64,8 @@ Originally known as *Teacher AI* for its focus on supporting staff in schools, t
       "stopCommands": [
         "token": "[offtopic]",
         "message": "This is off-topic."
-      ]
+      ],
+      "userMaxWeeklySpend": 2.00
     }
     ```
 
@@ -80,13 +81,16 @@ Originally known as *Teacher AI* for its focus on supporting staff in schools, t
         * `category` - the category of the preset, displayed as a heading in the sidebar
         * `introduction` - the message to display when this preset is selected, in Markdown format (note that this is not sent to the language model)
         * `instructions` - the system instructions to send to the language model along with the user's message
-        * `model` - the OpenAI model to use for this preset, as configured above
-        * `temperature` (optional) - the temperature to use
+        * `model` - the OpenAI model to use for this preset, as configured below
+        * `temperature` (optional) - the temperature to use, where supported by the model
         * `reasoningEffort` (optional) - the reasoning effort to use, where supported by the model
         * `webSearchEnabled` (optional) - whether web searches are enabled
         * `vectorStoreId` (optional) - the ID of the OpenAI vector store to use for this preset
     * `showPresetDetails` - whether to show the preset details, such as the system instructions and model name, to the user
-    * `stopCommands` - an array of tokens that, when received from the language model, will stop the conversation and display a customised message; this needs to be used in conjunction with the model `instructions` above
+    * `stopCommands` - specific strings that, if received from the language model, will stop the conversation and display a customised message; this needs to be used in conjunction with the model `instructions` above, and can be useful for safety purposes
+        * `token` - the exact text to match in the language model's output (e.g. `[OFF TOPIC]`)
+        * `message` - the warning to display to the user, in Markdown format
+    * `userMaxWeeklySpend` - the amount each user is allowed to spend per week; resets Sundays (OpenAI token usage is retrospective, so users might slightly exceed the limit before restrictions apply)
  
 6. Create an Azure app registration.
     * Name - `Organisation AI`
@@ -108,7 +112,6 @@ Originally known as *Teacher AI* for its focus on supporting staff in schools, t
 
     * `Organisation__Name` - the name of your organisation
     * `Organisation__AppWebsite` - the host name where this app will be hosted, e.g. `example.com`
-    * `Organisation__UserMaxWeeklySpend` - the amount that each user is allowed to spend each week
     * `Organisation__Reviewers__0` - the email address of a user to give reviewer access, which allows them to review all users' AI conversations (subsequent reviewers can be configured by adding additional items with incrementing indices)
     * `Organisation__CountryCode` - your country code, e.g. `GB` for Great Britain (used for localised web search)
     * `Organisation__City` - your city name (used for localised web search)
@@ -126,6 +129,10 @@ Originally known as *Teacher AI* for its focus on supporting staff in schools, t
     * `OpenAI__Models__0__CostPer1MCachedInputTokens` - the model cost per 1M cached input tokens
     * `OpenAI__Models__0__CostPer1MOutputTokens` - the model cost per 1M output tokens
     * `OpenAI__Models__0__CostPer1KWebSearches` - the model cost per 1K web searches (if the model does not support web searches, omit this setting)
+
+### Updating configuration files
+
+To make changes to users or user groups after deployment, you can edit the files in the `config` blob container. A user with reviewer access must then navigate to `/api/refresh` for the changes to take effect.
 
 ### Contributing
 

@@ -17,6 +17,8 @@ public class UserGroup
   public IList<StopCommand> StopCommands { get; set; }
   [JsonPropertyName("presets")]
   public IList<Preset> Presets { get; set; }
+  [JsonPropertyName("userMaxWeeklySpend")]
+  public decimal UserMaxWeeklySpend { get; init; }
   [JsonIgnore]
   public Dictionary<string, Preset> PresetDictionary { get; set; }
   [JsonIgnore]

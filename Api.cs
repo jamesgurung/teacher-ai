@@ -35,7 +35,7 @@ public static class Api
       if ((files?.Count ?? 0) > 0 && !userGroup.AllowUploads) return Results.BadRequest("File uploads are not allowed.");
 
       var spend = await TableService.GetSpendAsync(userEmail);
-      if (spend >= Organisation.Instance.UserMaxWeeklySpend) return Results.StatusCode(429);
+      if (spend >= userGroup.UserMaxWeeklySpend) return Results.StatusCode(429);
 
       Task<ClientResult<OpenAIResponse>> summaryTask = null;
       Conversation conversation = null;
@@ -228,7 +228,7 @@ public static class Api
               var updateEntityTask = TableService.UpsertConversationAsync(conversationEntity);
               var reviewTask = isReviewer ? Task.CompletedTask : TableService.UpsertReviewEntityAsync(conversationEntity);
               await Task.WhenAll(recordSpendTask, updateBlobTask, updateEntityTask, reviewTask);
-              spendLimitReached = (await recordSpendTask) >= Organisation.Instance.UserMaxWeeklySpend;
+              spendLimitReached = (await recordSpendTask) >= userGroup.UserMaxWeeklySpend;
               break;
             default:
               break;
