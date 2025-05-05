@@ -24,8 +24,9 @@ public static class Api
       [FromForm] string instanceId, HttpContext context, IHubContext<ChatHub, IChatClient> hubContext) =>
     {
       var userEmail = context.User.Identity.Name;
-      var isReviewer = context.User.IsInRole(AuthConstants.Reviewer);
-      var userGroup = UserGroup.ConfigByGroupName[UserGroup.GroupNameByUserEmail[userEmail]];
+      var userGroupName = UserGroup.GroupNameByUserEmail[userEmail];
+      var userGroup = UserGroup.ConfigByGroupName[userGroupName];
+      var isReviewer = userGroup.Reviewers.Contains(userEmail);
       var isFirstTurn = string.IsNullOrEmpty(id);
 
       if (string.IsNullOrEmpty(instanceId)) return Results.BadRequest("Instance ID cannot be empty.");
@@ -42,7 +43,7 @@ public static class Api
       ConversationEntity conversationEntity = null;
 
       var moderationClient = new ModerationClient("omni-moderation-latest", OpenAIConfig.Instance.ApiKey);
-      var moderationFlagged = false;
+      float moderationScore;
 
       if (isFirstTurn)
       {
@@ -63,10 +64,10 @@ public static class Api
 
         var moderationPrompt = string.IsNullOrEmpty(preset.Title) ? prompt : $"{preset.Title}:{MessageDelimeter}{prompt}";
         var moderationResult = await moderationClient.ClassifyTextAsync(moderationPrompt);
-        moderationFlagged = typeof(ModerationResult).GetProperties().Select(p => p.GetValue(moderationResult.Value)).OfType<ModerationCategory>()
-          .Any(cat => cat.Flagged && cat.Score >= 0.7);
+        moderationScore = typeof(ModerationResult).GetProperties().Select(p => p.GetValue(moderationResult.Value)).OfType<ModerationCategory>()
+          .Max(cat => cat.Flagged ? cat.Score : 0);
 
-        if (moderationFlagged)
+        if (moderationScore >= userGroup.ModerationThreshold)
         {
           conversationEntity = new ConversationEntity(userEmail, id, $"{FlagIcon} Content flagged", 0m);
           await TableService.UpsertConversationAsync(conversationEntity);
@@ -106,8 +107,9 @@ public static class Api
         var pastConversation = string.Join(MessageDelimeter, conversation.Turns.Where(o => o.Role == "user").Select(turn => turn.Text));
         var moderationTitle = string.IsNullOrEmpty(conversation.Preset.Title) ? string.Empty : $"{conversation.Preset.Title}:{MessageDelimeter}";
         var moderationResult = await moderationClient.ClassifyTextAsync(moderationTitle + pastConversation + MessageDelimeter + prompt);
-        moderationFlagged = moderationResult.Value.Flagged;
-        if (moderationFlagged)
+        moderationScore = typeof(ModerationResult).GetProperties().Select(p => p.GetValue(moderationResult.Value)).OfType<ModerationCategory>()
+          .Max(cat => cat.Flagged ? cat.Score : 0);
+        if (moderationScore >= userGroup.ModerationThreshold)
         {
           conversationEntity.Title = $"{FlagIcon} {conversationEntity.Title}";
           await TableService.UpsertConversationAsync(conversationEntity);
@@ -122,7 +124,8 @@ public static class Api
       var userTurn = new ConversationTurn
       {
         Role = "user",
-        Text = prompt
+        Text = prompt,
+        Timestamp = DateTime.UtcNow
       };
       if (files is not null)
       {
@@ -145,14 +148,12 @@ public static class Api
       }
       conversation.Turns.Add(userTurn);
       var spendLimitReached = false;
-      var streamer = hubContext.Clients.User(userEmail);
 
-      if (moderationFlagged)
+      if (moderationScore >= userGroup.ModerationThreshold)
       {
-        await streamer.Append(FlagToken, instanceId);
         conversation.Turns.Add(new() { Role = "assistant", Text = FlagToken });
         var updateBlobTask = BlobService.CreateOrUpdateConversationAsync(id, conversation);
-        var reviewTask = isReviewer ? Task.CompletedTask : TableService.UpsertReviewEntityAsync(conversationEntity);
+        var reviewTask = isReviewer ? Task.CompletedTask : TableService.UpsertReviewEntityAsync(conversationEntity, userGroupName);
         await Task.WhenAll(updateBlobTask, reviewTask);
       }
       else
@@ -185,6 +186,7 @@ public static class Api
           chatOptions.Tools.Add(ResponseTool.CreateFileSearchTool([conversation.Preset.VectorStoreId], 10));
         }
 
+        var streamer = hubContext.Clients.User(userEmail);
         var responseItems = conversation.AsResponseItems();
         var responseStream = chatClient.CreateResponseStreamingAsync(responseItems, chatOptions);
 
@@ -214,7 +216,7 @@ public static class Api
               if (isFirstTurn)
               {
                 var summaryResponse = await summaryTask;
-                var title = string.Join(' ', summaryResponse.Value.GetOutputText().Split(' ', 5, StringSplitOptions.RemoveEmptyEntries).Take(4));
+                var title = string.Join(' ', summaryResponse.Value.GetOutputText().Split(' ', 5, StringSplitOptions.RemoveEmptyEntries).Take(4)).Trim('*');
                 cost += CalculateCost(OpenAIConfig.Instance.ModelDictionary[OpenAIConfig.Instance.TitleSummarisationModel], summaryResponse.Value.Usage);
                 conversationEntity = new ConversationEntity(userEmail, id, title, cost);
               }
@@ -224,9 +226,11 @@ public static class Api
                 conversationEntity.Cost = (existingCost + cost).ToString(CultureInfo.InvariantCulture);
               }
               var updateBlobTask = BlobService.CreateOrUpdateConversationAsync(id, conversation);
-              var recordSpendTask = TableService.RecordSpendAsync(userEmail, cost);
+              var recordSpendTask = TableService.RecordSpendAsync(userEmail, cost, userGroupName);
               var updateEntityTask = TableService.UpsertConversationAsync(conversationEntity);
-              var reviewTask = isReviewer ? Task.CompletedTask : TableService.UpsertReviewEntityAsync(conversationEntity);
+              var reviewTask = moderationScore >= userGroup.ReviewThreshold && !isReviewer
+                ? TableService.UpsertReviewEntityAsync(conversationEntity, userGroupName)
+                : Task.CompletedTask;
               await Task.WhenAll(recordSpendTask, updateBlobTask, updateEntityTask, reviewTask);
               spendLimitReached = (await recordSpendTask) >= userGroup.UserMaxWeeklySpend;
               break;
@@ -247,19 +251,26 @@ public static class Api
 
     group.MapGet("/conversations/{id}", [Authorize] async (string id, HttpContext context) =>
     {
-      if (context.User.IsInRole(AuthConstants.Reviewer))
-      {
-        return Results.Ok(await BlobService.GetConversationAsync(id));
-      }
-      else
-      {
-        var tableTask = TableService.ConversationExistsAsync(context.User.Identity.Name, id);
-        var blobTask = BlobService.GetConversationAsync(id);
-        var entityExists = await tableTask;
-        if (!entityExists) return Results.NotFound();
-        var conversation = await blobTask;
-        return Results.Ok(conversation);
-      }
+      var userEmail = context.User.Identity.Name;
+      var tableTask = TableService.ConversationExistsAsync(userEmail, id);
+      var blobTask = BlobService.GetConversationAsync(id);
+      var entityExists = await tableTask;
+      if (!entityExists) return Results.NotFound();
+      var conversation = await blobTask;
+      return Results.Ok(conversation);
+    });
+
+    group.MapGet("/conversations/{group}/{id}", [Authorize] async (string group, string id, HttpContext context) =>
+    {
+      var userEmail = context.User.Identity.Name;
+      if (!UserGroup.ConfigByGroupName.TryGetValue(group, out var groupConfig)) return Results.Forbid();
+      if (!groupConfig.Reviewers.Contains(userEmail)) return Results.Forbid();
+      var tableTask = TableService.ReviewExistsAsync(group, id);
+      var blobTask = BlobService.GetConversationAsync(id);
+      var entityExists = await tableTask;
+      if (!entityExists) return Results.NotFound();
+      var conversation = await blobTask;
+      return Results.Ok(conversation);
     });
 
     group.MapDelete("/conversations/{id}", [Authorize] async (string id, HttpContext context) =>
@@ -272,14 +283,18 @@ public static class Api
       return Results.NoContent();
     });
 
-    group.MapPost("/conversations/{id}/resolve", [Authorize(Roles = AuthConstants.Reviewer)] async (string id) =>
+    group.MapPost("/conversations/{group}/{id}/resolve", [Authorize] async (string group, string id, HttpContext context) =>
     {
-      await TableService.DeleteReviewEntityAsync(id);
+      var userEmail = context.User.Identity.Name;
+      if (!UserGroup.ConfigByGroupName.TryGetValue(group, out var groupConfig)) return Results.Forbid();
+      if (!groupConfig.Reviewers.Contains(userEmail)) return Results.Forbid();
+      await TableService.DeleteReviewEntityAsync(group, id);
       return Results.NoContent();
     });
 
-    group.MapGet("/refresh", [Authorize(Roles = AuthConstants.Reviewer)] async (HttpContext context) =>
+    group.MapGet("/refresh", [Authorize] async (HttpContext context) =>
     {
+      if (!UserGroup.GroupNamesByReviewerEmail.Contains(context.User.Identity.Name)) return Results.Forbid();
       await BlobService.LoadConfigAsync();
       return Results.Content("Refreshed presets.", "text/plain");
     });

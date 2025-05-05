@@ -1,6 +1,7 @@
 {
   "allowUploads": true,
   "introMessage": "This service is for work purposes only. All messages are recorded and monitored.\n\nPlease observe our [AI Acceptable Use Policy](https://example.com).",
+  "moderationThreshold": 0.8,
   "presets": [
     {
       "id": "default",
@@ -140,6 +141,8 @@
       "reasoningEffort": "high"
     }
   ],
+  "reviewers": [ "reviewer@example.com" ],
+  "reviewThreshold": 0,
   "showPresetDetails": true,
   "stopCommands": [],
   "userMaxWeeklySpend": 2.00

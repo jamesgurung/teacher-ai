@@ -4,7 +4,8 @@
 @{
   var spendTask = TableService.GetSpendAsync(User.Identity.Name);
   var historyTask = TableService.GetConversationsAsync(User.Identity.Name, true);
-  var reviewTask = User.IsInRole(AuthConstants.Reviewer) ? TableService.GetReviewEntitiesAsync() : Task.FromResult<List<ReviewEntity>>(null);
+  var reviewGroups = UserGroup.GroupNamesByReviewerEmail[User.Identity.Name].ToList();
+  var reviewTask = reviewGroups.Count > 0 ? TableService.GetReviewEntitiesAsync(reviewGroups) : Task.FromResult<List<ReviewEntity>>(null);
   await Task.WhenAll(spendTask, historyTask, reviewTask);
   var spend = await spendTask;
   var history = await historyTask;
@@ -71,7 +72,7 @@
     <div id="user" style="display: none"></div>
 
     <div id="welcome-message">
-      <img src="/apple-touch-icon.png" class="logo" />
+      <img src="/logo.png" class="logo" />
       <h1 class="brand">@Organisation.Instance.Name <span>AI</span></h1>
       <div id="intro-text"></div>
     </div>
@@ -107,7 +108,7 @@
 <button id="mobile-sidebar-toggle"><span class="material-symbols-rounded">menu</span></button>
 
 @section Scripts {
-  <script src="https://cdn.jsdelivr.net/npm/marked@15.0.8/lib/marked.umd.min.js" integrity="sha512-DmUkpWXSNvkI/wvXiCbcM8EQQDNr0AaueHX7+xW1fhi2DmL0QD1rfaTAhCDmmdhse+ZscgbpPSwX7uIJLtYZyQ==" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@15.0.11/lib/marked.umd.min.js" integrity="sha512-YSg6Km+8effvEclDsIqG6GiWsUUIBcxTVRvxQFDgmOjDvandV2p3ci/0v5m1Zp5nzldmEcHhNZbw9wJjXdsz5A==" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@8.0.7/dist/browser/signalr.min.js" integrity="sha512-7SRCYIJtR6F8ocwW7UxW6wGKqbSyqREDbfCORCbGLatU0iugBLwyOXpzhkPyHIFdBO0K2VCu57fvP2Twgx1o2A==" crossorigin="anonymous"></script>
   <script>
     const antiforgeryToken = '@(Antiforgery.GetAndStoreTokens(HttpContext).RequestToken)';

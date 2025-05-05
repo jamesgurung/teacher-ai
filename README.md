@@ -46,6 +46,7 @@ Originally known as *Teacher AI* for its focus on supporting staff in schools, t
     {
       "allowUploads": true,
       "introMessage": "This service is for work-related queries only.",
+      "moderationThreshold": 0.7,
       "presets": [
         {
           "id": "default",
@@ -60,6 +61,8 @@ Originally known as *Teacher AI* for its focus on supporting staff in schools, t
           "vectorStoreId": null
         }
       ],
+      "reviewers": [ "reviewer@example.com" ],
+      "reviewThreshold": 0,
       "showPresetDetails": true,
       "stopCommands": [
         "token": "[offtopic]",
@@ -69,12 +72,13 @@ Originally known as *Teacher AI* for its focus on supporting staff in schools, t
     }
     ```
 
-    Our [examples](examples) folder contains some sample configuration files for a secondary school.
+    Our [examples](examples) folder contains sample configuration files for a secondary school.
 
     The settings are:
 
     * `allowUploads` - whether users in this group can upload files
     * `introMessage` - a message to display to users on the homepage in Markdown format, e.g. you may include a link to your organisation's AI policy
+    * `moderationThreshold` - how certain the moderation model must be that a message is inappropriate before rejecting it and stopping the conversation (low values like 0.4 provide the most protection, whereas high values like 0.8 minimise false positives)
     * `presets` - an array of preset prompt templates that will be available to users from the sidebar
         * `id` - the ID of the preset, which is a unique string without spaces; use the ID `default` to specify the default preset which loads at the start
         * `title` - the title of the preset, displayed in the sidebar
@@ -86,6 +90,8 @@ Originally known as *Teacher AI* for its focus on supporting staff in schools, t
         * `reasoningEffort` (optional) - the reasoning effort to use, where supported by the model
         * `webSearchEnabled` (optional) - whether web searches are enabled
         * `vectorStoreId` (optional) - the ID of the OpenAI vector store to use for this preset
+    * `reviewers` - an array of users to give reviewer access, which allows them to retrospectively review all AI conversations in this group
+    * `reviewThreshold` - how certain the moderation model must be that a message is inappropriate before adding it to the queue for manual review (set this to 0 if you wish to review all messages)
     * `showPresetDetails` - whether to show the preset details, such as the system instructions and model name, to the user
     * `stopCommands` - specific strings that, if received from the language model, will stop the conversation and display a customised message; this needs to be used in conjunction with the model `instructions` above, and can be useful for safety purposes
         * `token` - the exact text to match in the language model's output (e.g. `[OFF TOPIC]`)

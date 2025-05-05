@@ -41,6 +41,7 @@ function createReviewItem(reviewEntity) {
   const reviewItem = document.createElement('div');
   reviewItem.id = `review-${reviewEntity.id}`;
   reviewItem.dataset.user = reviewEntity.user;
+  reviewItem.dataset.group = reviewEntity.group;
   reviewItem.className = 'chat-list-item';
 
   const textDiv = document.createElement('div');
@@ -48,16 +49,16 @@ function createReviewItem(reviewEntity) {
   textDiv.textContent = reviewEntity.title;
   reviewItem.appendChild(textDiv);
 
-  reviewItem.addEventListener('click', async () => await loadChat(reviewEntity.id, reviewItem.dataset.user));
+  reviewItem.addEventListener('click', async () => await loadChat(reviewEntity.id, reviewItem.dataset.user, reviewItem.dataset.group));
   return reviewItem;
 }
 
-async function loadChat(chatId, user) {
+async function loadChat(chatId, user, group) {
   chatContentContainer.innerHTML = '';
   welcomeMessage.style.display = 'none';
   document.querySelectorAll('.chat-list-item.active').forEach(chat => chat.classList.remove('active'));
   document.getElementById(`${user ? 'review' : 'chat'}-${chatId}`)?.classList.add('active');
-  const response = await fetch(`/api/conversations/${chatId}`);
+  const response = await fetch(group ? `/api/conversations/${group}/${chatId}` : `/api/conversations/${chatId}`);
   const conversation = await response.json();
   applyPreset(conversation.preset, !!user);
   currentChatId = chatId;
@@ -72,7 +73,7 @@ async function loadChat(chatId, user) {
     resolveBtn.textContent = 'Resolve';
     resolveBtn.addEventListener('click', async e => {
       e.stopPropagation();
-      await resolveReviewItem();
+      await resolveReviewItem(group);
     });
     chatContentContainer.appendChild(resolveBtn);
     chatContainer.scrollTop = 0;
@@ -94,9 +95,9 @@ function moveCurrentChatToTop() {
   }
 }
 
-async function resolveReviewItem() {
+async function resolveReviewItem(group) {
   document.querySelector('.resolve').disabled = true;
-  const resp = await fetch(`/api/conversations/${currentChatId}/resolve`, { method: 'POST', headers });
+  const resp = await fetch(`/api/conversations/${group}/${currentChatId}/resolve`, { method: 'POST', headers });
   if (!resp.ok) {
     alert('Failed to resolve review item.');
     return;

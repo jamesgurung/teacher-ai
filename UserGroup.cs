@@ -6,6 +6,7 @@ public class UserGroup
 {
   public static Dictionary<string, UserGroup> ConfigByGroupName { get; set; }
   public static Dictionary<string, string> GroupNameByUserEmail { get; set; }
+  public static ILookup<string, string> GroupNamesByReviewerEmail { get; set; }
 
   [JsonPropertyName("showPresetDetails")]
   public bool ShowPresetDetails { get; set; }
@@ -19,6 +20,12 @@ public class UserGroup
   public IList<Preset> Presets { get; set; }
   [JsonPropertyName("userMaxWeeklySpend")]
   public decimal UserMaxWeeklySpend { get; init; }
+  [JsonPropertyName("moderationThreshold")]
+  public float ModerationThreshold { get; init; }
+  [JsonPropertyName("reviewThreshold")]
+  public float ReviewThreshold { get; init; }
+  [JsonPropertyName("reviewers")]
+  public IList<string> Reviewers { get; set; }
   [JsonIgnore]
   public Dictionary<string, Preset> PresetDictionary { get; set; }
   [JsonIgnore]

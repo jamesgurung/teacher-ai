@@ -58,19 +58,21 @@ public static class TableService
     return conversations.OrderByDescending(o => o.Timestamp).ToList();
   }
 
-  public static async Task<List<ReviewEntity>> GetReviewEntitiesAsync()
+  public static async Task<List<ReviewEntity>> GetReviewEntitiesAsync(IEnumerable<string> userGroups)
   {
-    var query = reviewClient.QueryAsync<ReviewEntity>(select: ["RowKey", "User", "Title", "Timestamp"]);
+    var filters = userGroups.Select(g => TableClient.CreateQueryFilter($"PartitionKey eq {g}"));
+    var filter = string.Join(" or ", filters);
+    var query = reviewClient.QueryAsync<ReviewEntity>(filter, select: ["PartitionKey", "RowKey", "User", "Title", "Timestamp"]);
     var reviewEntities = await query.ToListAsync();
     return reviewEntities.OrderByDescending(o => o.Timestamp).ToList();
   }
 
-  public static async Task UpsertReviewEntityAsync(ConversationEntity conversation)
+  public static async Task UpsertReviewEntityAsync(ConversationEntity conversation, string userGroup)
   {
     ArgumentNullException.ThrowIfNull(conversation);
     var reviewItem = new ReviewEntity
     {
-      PartitionKey = nameof(ReviewEntity),
+      PartitionKey = userGroup,
       RowKey = conversation.RowKey,
       User = conversation.PartitionKey,
       Title = conversation.Title
@@ -78,10 +80,18 @@ public static class TableService
     await reviewClient.UpsertEntityAsync(reviewItem, TableUpdateMode.Replace);
   }
 
-  public static async Task DeleteReviewEntityAsync(string conversationId)
+  public static async Task<bool> ReviewExistsAsync(string userGroup, string conversationId)
+  {
+    ArgumentException.ThrowIfNullOrEmpty(userGroup);
+    ArgumentException.ThrowIfNullOrEmpty(conversationId);
+    var entity = await reviewClient.GetEntityIfExistsAsync<ConversationEntity>(userGroup, conversationId, select: ["RowKey"]);
+    return entity.HasValue;
+  }
+
+  public static async Task DeleteReviewEntityAsync(string userGroup, string conversationId)
   {
     ArgumentNullException.ThrowIfNull(conversationId);
-    await reviewClient.DeleteEntityAsync(nameof(ReviewEntity), conversationId);
+    await reviewClient.DeleteEntityAsync(userGroup, conversationId);
   }
 
   public static async Task DeleteConversationAsync(string userEmail, string conversationId)
@@ -91,7 +101,7 @@ public static class TableService
     await conversationsClient.DeleteEntityAsync(userEmail, conversationId);
   }
 
-  public static async Task<decimal> RecordSpendAsync(string userEmail, decimal amount)
+  public static async Task<decimal> RecordSpendAsync(string userEmail, decimal amount, string userGroup)
   {
     ArgumentNullException.ThrowIfNull(userEmail);
     var weekStart = GetCurrentWeekStart();
@@ -106,7 +116,13 @@ public static class TableService
     }
     else
     {
-      var newSpend = new SpendEntity { PartitionKey = weekStart, RowKey = userEmail, Spent = amount.ToString(CultureInfo.InvariantCulture) };
+      var newSpend = new SpendEntity
+      {
+        PartitionKey = weekStart,
+        RowKey = userEmail,
+        Spent = amount.ToString(CultureInfo.InvariantCulture),
+        UserGroup = userGroup
+      };
       await spendClient.AddEntityAsync(newSpend);
       return amount;
     }
@@ -165,11 +181,12 @@ public class SpendEntity : ITableEntity
   public ETag ETag { get; set; }
 
   public string Spent { get; set; }
+  public string UserGroup { get; set; }
 }
 
 public class ReviewEntity : ITableEntity
 {
-  [JsonIgnore]
+  [JsonPropertyName("group")]
   public string PartitionKey { get; set; }
   [JsonPropertyName("id")]
   public string RowKey { get; set; }

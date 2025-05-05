@@ -98,5 +98,8 @@ public static class BlobService
         throw new InvalidOperationException($"User group '{userGroupName}' not found", ex);
       }
     }
+    UserGroup.GroupNamesByReviewerEmail = UserGroup.ConfigByGroupName
+      .SelectMany(g => g.Value.Reviewers, (g, r) => new { ReviewerEmail = r, GroupName = g.Key })
+      .ToLookup(o => o.ReviewerEmail, o => o.GroupName, StringComparer.OrdinalIgnoreCase);
   }
 }

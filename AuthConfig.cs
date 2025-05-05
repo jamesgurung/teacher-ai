@@ -87,10 +87,6 @@ public static class AuthConfig
       identity.RemoveClaim(identity.Claims.ElementAt(i));
     }
     identity.AddClaim(new Claim(ClaimTypes.Name, email));
-    if (Organisation.Instance.Reviewers.Contains(email, StringComparer.OrdinalIgnoreCase))
-    {
-      identity.AddClaim(new Claim(ClaimTypes.Role, AuthConstants.Reviewer));
-    }
     return true;
   }
 
@@ -111,10 +107,4 @@ public static class AuthConfig
       return Results.Redirect("/auth/login");
     });
   }
-}
-
-public static class AuthConstants
-{
-  public const string Reviewer = nameof(Reviewer);
-  public const string UserGroup = nameof(UserGroup);
 }

@@ -6,6 +6,7 @@
 }
 
 :root {
+  --max-content-width: 900px;
   --primary-color: #5e5ce6;
   --bg-color: #ffffff;
   --sidebar-bg: #f7f7f8;
@@ -16,7 +17,67 @@
   --highlight-color: #f6f8fa;
   --text-color: #343541;
   --placeholder-color: #8e8ea0;
-  --max-content-width: 900px;
+  --grey: #808080;
+  --delete-chat-hover-color: #696969;
+  --hover-bg: rgba(0, 0, 0, 0.05);
+  --active-bg: rgba(0, 0, 0, 0.1);
+  --error-bg: #fff4f4;
+  --error-color: #e53935;
+  --search-progress-color: #1a58c6;
+  --search-progress-bg: #f0f7ff;
+  --search-complete-color: #166534;
+  --search-complete-bg: #f0fdf4;
+  --search-complete-icon: #16a34a;
+  --stop-message-bg: #fffcf0;
+  --stop-message-border: #e5c734;
+  --close-btn-color: #666;
+  --close-btn-hover-color: #333;
+  --timestamp-color: #bbb;
+  --thumbnail-pdf-bg: #f8f9fa;
+  --thumbnail-pdf-color: #dc3545;
+  --file-icon-bg: #f2f2f2;
+  --file-icon-color: #5e5ce6;
+  --popup-box-shadow-color: rgba(0, 0, 0, 0.15);
+  --remove-file-bg: rgba(0, 0, 0, 0.5);
+  --toggle-bg: rgba(0, 0, 0, 0.2);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --primary-color: #7a78ff;
+    --bg-color: #1a1a1f;
+    --sidebar-bg: #212226;
+    --user-msg-bg: #7a78ff1c;
+    --user-msg-bg-2: #7a78ff2e;
+    --user-msg-border: #7a78ff60;
+    --border-color: #3a3a43;
+    --highlight-color: #2a2a30;
+    --text-color: #e0e0e6;
+    --placeholder-color: #9e9ea8;
+    --grey: #a0a0a0;
+    --delete-chat-hover-color: #c0c0c0;
+    --hover-bg: rgba(255, 255, 255, 0.08);
+    --active-bg: rgba(255, 255, 255, 0.12);
+    --error-bg: #3c1c1c;
+    --error-color: #ff6b6b;
+    --search-progress-color: #6b8eff;
+    --search-progress-bg: #1f2b47;
+    --search-complete-color: #7ce07c;
+    --search-complete-bg: #1a3526;
+    --search-complete-icon: #4caf50;
+    --stop-message-bg: #3a3522;
+    --stop-message-border: #f0c94a;
+    --close-btn-color: #999;
+    --close-btn-hover-color: #ccc;
+    --timestamp-color: #666;
+    --thumbnail-pdf-bg: #2a2a30;
+    --thumbnail-pdf-color: #ff6b6b;
+    --file-icon-bg: #2a2a2f;
+    --file-icon-color: #7a78ff;
+    --popup-box-shadow-color: rgba(0, 0, 0, 0.3);
+    --remove-file-bg: rgba(255, 255, 255, 0.2);
+    --toggle-bg: rgba(255, 255, 255, 0.15);
+  }
 }
 
 body {
@@ -149,12 +210,12 @@ button {
 }
 
 .icon-button:hover {
-  background-color: rgba(0, 0, 0, 0.05);
+  background-color: var(--hover-bg);
 }
 
 #new-chat-btn {
   background-color: var(--primary-color);
-  color: white;
+  color: var(--bg-color);
   border: none;
   padding: 8px 16px;
   border-radius: 4px;
@@ -195,7 +256,7 @@ button {
 
 .delete-chat {
   opacity: 0;
-  color: grey;
+  color: var(--grey);
   background: none;
   border: none;
   padding: 0;
@@ -215,15 +276,15 @@ button {
 }
 
 .delete-chat:hover {
-  color: dimgrey;
+  color: var(--delete-chat-hover-color);
 }
 
 .chat-list-item:hover {
-  background-color: rgba(0, 0, 0, 0.05);
+  background-color: var(--hover-bg);
 }
 
 .chat-list-item.active {
-  background-color: rgba(0, 0, 0, 0.1);
+  background-color: var(--active-bg);
 }
 
 .preset-category-header {
@@ -279,7 +340,7 @@ button {
 }
 
 #landing-message h1 {
-  margin-bottom: 12px;
+  margin: 6px 0 12px;
   font-size: 32px;
 }
 
@@ -289,7 +350,7 @@ button {
 
 .login-btn {
   background-color: var(--primary-color);
-  color: white !important;
+  color: var(--bg-color) !important;
   text-decoration: none !important;
   border: none;
   padding: 8px 16px;
@@ -346,14 +407,14 @@ button {
 }
 
 .assistant-message.error {
-  background-color: #fff4f4;
-  border-left: 4px solid #e53935;
+  background-color: var(--error-bg);
+  border-left: 4px solid var(--error-color);
   padding: 12px 15px;
   border-radius: 4px;
 }
 
 .assistant-message.error .material-symbols-rounded {
-  color: #e53935;
+  color: var(--error-color);
   font-size: 18px;
   margin-right: 8px;
   vertical-align: middle;
@@ -393,6 +454,8 @@ button {
   overflow-y: auto;
   border-radius: 8px;
   font-size: 16px;
+  background-color: var(--bg-color);
+  color: var(--text-color);
 }
 
 #send-btn {
@@ -461,11 +524,11 @@ button {
 .file-thumbnail .pdf-thumbnail {
   width: 100%;
   height: 100%;
-  background-color: #f8f9fa;
+  background-color: var(--thumbnail-pdf-bg);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #dc3545;
+  color: var(--thumbnail-pdf-color);
   font-weight: bold;
   font-size: 12px;
 }
@@ -474,8 +537,8 @@ button {
   position: absolute;
   top: 2px;
   right: 2px;
-  background-color: rgba(0, 0, 0, 0.5);
-  color: white;
+  background-color: var(--remove-file-bg);
+  color: var(--bg-color);
   border: none;
   border-radius: 50%;
   width: 18px;
@@ -492,7 +555,7 @@ button {
   top: 14px;
   z-index: 20;
   background-color: var(--primary-color);
-  color: white;
+  color: var(--bg-color);
   border: none;
   border-radius: 50%;
   width: 40px;
@@ -502,7 +565,7 @@ button {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 5px var(--toggle-bg);
 }
 
 #mobile-sidebar-toggle .material-symbols-rounded {
@@ -583,11 +646,11 @@ button {
 #system-prompt-popup {
   display: none;
   position: absolute;
-  background: white;
+  background: var(--bg-color);
   border: 1px solid var(--border-color);
   padding: 15px;
   border-radius: 8px;
-  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 3px 12px var(--popup-box-shadow-color);
   max-width: min(800px, 60vw);
   max-height: 60dvh;
   z-index: 100;
@@ -625,7 +688,7 @@ button {
   right: 10px;
   background: none;
   border: none;
-  color: #666;
+  color: var(--close-btn-color);
   font-size: 18px;
   cursor: pointer;
   padding: 0;
@@ -645,8 +708,8 @@ button {
 }
 
 .close-btn:hover {
-  background-color: rgba(0, 0, 0, 0.05);
-  color: #333;
+  background-color: var(--hover-bg);
+  color: var(--close-btn-hover-color);
 }
 
 .message *:last-child {
@@ -788,8 +851,8 @@ message a:visited {
 }
 
 .search-in-progress {
-  color: #1a58c6;
-  background-color: #f0f7ff;
+  color: var(--search-progress-color);
+  background-color: var(--search-progress-bg);
   display: flex;
   align-items: center;
 }
@@ -801,14 +864,14 @@ message a:visited {
 }
 
 .search-completed {
-  color: #166534;
-  background-color: #f0fdf4;
+  color: var(--search-complete-color);
+  background-color: var(--search-complete-bg);
 }
 
 .search-completed .material-symbols-rounded {
   margin-right: 8px;
   font-size: 18px;
-  color: #16a34a;
+  color: var(--search-complete-icon);
 }
 
 @keyframes pulse {
@@ -850,13 +913,13 @@ message a:visited {
 .file-icon {
   width: 100px;
   height: 100px;
-  background-color: #f2f2f2;
+  background-color: var(--file-icon-bg);
   border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: bold;
-  color: #5e5ce6;
+  color: var(--file-icon-color);
   font-size: 14px;
 }
 
@@ -871,7 +934,7 @@ message a:visited {
 }
 
 h1.brand span {
-  color: grey;
+  color: var(--grey);
   font-weight: normal;
 }
 
@@ -899,7 +962,7 @@ h1.brand span {
 
 button.resolve {
   background-color: var(--primary-color);
-  color: white;
+  color: var(--bg-color);
   border: none;
   margin: 10px auto 20px;
   padding: 8px 24px;
@@ -930,12 +993,12 @@ button.resolve:disabled {
 
 .tab.active #review-badge {
   background-color: var(--primary-color);
-  color: white;
+  color: var(--bg-color);
 }
 
 .assistant-message.stop {
-  background-color: #fffcf0;
-  border-left: 4px solid #e5c734;
+  background-color: var(--stop-message-bg);
+  border-left: 4px solid var(--stop-message-border);
   padding: 12px 15px;
   border-radius: 4px;
 }
@@ -948,4 +1011,21 @@ button.resolve:disabled {
   padding: 4px 20px;
   font-size: 9pt;
   border-radius: 20px 20px 0 0
+}
+
+.message:hover .message-timestamp {
+  opacity: 1;
+}
+
+.message-timestamp {
+  position: absolute;
+  top: calc(100% + 3px);
+  font-size: 8pt;
+  font-weight: bold;
+  color: var(--timestamp-color);
+  right: 2px;
+  width: 150px;
+  text-align: right;
+  opacity: 0;
+  transition: opacity linear 0.2s;
 }

@@ -8,7 +8,7 @@ async function handleSubmit(e) {
   const files = selectedFiles;
   if (message.length === 0) return;
 
-  const userTurn = { role: 'user', text: message };
+  const userTurn = { role: 'user', text: message, timestamp: new Date().toISOString() };
 
   if (selectedFiles.length > 0) {
     const processFilesByType = (fileArray, isImage) => {
@@ -179,6 +179,16 @@ function addMessageToUI(turn) {
       wrapTables(textDiv);
       messageDiv.appendChild(textDiv);
     }
+  }
+
+  if (turn.timestamp) {
+    const timestampDiv = document.createElement('div');
+    timestampDiv.className = 'message-timestamp';
+    const date = new Date(turn.timestamp);
+    const options = { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+    const formattedDate = date.toLocaleString('en-GB', options);
+    timestampDiv.textContent = formattedDate;
+    messageDiv.appendChild(timestampDiv);
   }
 
   chatContentContainer.appendChild(messageDiv);

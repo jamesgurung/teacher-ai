@@ -53,6 +53,8 @@ public class ConversationTurn
   public IList<ConversationTurnImage> Images { get; set; }
   [JsonPropertyName("files"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
   public IList<ConversationTurnFile> Files { get; set; }
+  [JsonPropertyName("timestamp"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+  public DateTime? Timestamp { get; set; }
 }
 
 public class ConversationTurnImage
