@@ -205,7 +205,6 @@ button {
   border: none;
   padding: 8px;
   cursor: pointer;
-  color: var(--text-color);
   border-radius: 4px;
 }
 
@@ -981,14 +980,14 @@ button.resolve:disabled {
   display: none;
   background-color: var(--placeholder-color);
   color: var(--border-color);
-  font-size: 8px;
-  padding: 1px 5px;
-  border-radius: 8px;
+  font-size: 7pt;
+  padding: 0 3px;
+  border-radius: 3px;
   font-weight: bold;
   margin-left: 2px;
   position: absolute;
   top: 5px;
-  right: 4px;
+  right: 9px;
 }
 
 .tab.active #review-badge {

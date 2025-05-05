@@ -114,8 +114,8 @@
 <button id="mobile-sidebar-toggle"><span class="material-symbols-rounded">menu</span></button>
 
 @section Scripts {
-  <script src="https://cdn.jsdelivr.net/npm/marked@15.0.11/lib/marked.umd.min.js" integrity="sha512-YSg6Km+8effvEclDsIqG6GiWsUUIBcxTVRvxQFDgmOjDvandV2p3ci/0v5m1Zp5nzldmEcHhNZbw9wJjXdsz5A==" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@8.0.7/dist/browser/signalr.min.js" integrity="sha512-7SRCYIJtR6F8ocwW7UxW6wGKqbSyqREDbfCORCbGLatU0iugBLwyOXpzhkPyHIFdBO0K2VCu57fvP2Twgx1o2A==" crossorigin="anonymous"></script>
+  <script src="/lib/marked/lib/marked.umd.min.js"></script>
+  <script src="/lib/signalr/dist/browser/signalr.min.js"></script>
   <script>
     const antiforgeryToken = '@(Antiforgery.GetAndStoreTokens(HttpContext).RequestToken)';
     const presets = @Html.Raw(userGroup.PresetJson);

@@ -1,0 +1,22 @@
+{
+  "version": "3.0",
+  "defaultProvider": "jsdelivr",
+  "libraries": [
+    {
+      "provider": "jsdelivr",
+      "library": "@microsoft/signalr@8.0.7",
+      "destination": "wwwroot/lib/signalr/",
+      "files": [
+        "dist/browser/signalr.min.js"
+      ]
+    },
+    {
+      "provider": "jsdelivr",
+      "library": "marked@15.0.11",
+      "destination": "wwwroot/lib/marked/",
+      "files": [
+        "lib/marked.umd.min.js"
+      ]
+    }
+  ]
+}

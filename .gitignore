@@ -2,6 +2,7 @@
 .vs/
 bin/
 obj/
+wwwroot/lib/
 Properties/PublishProfiles/
 Properties/ServiceDependencies/
 appsettings.json
