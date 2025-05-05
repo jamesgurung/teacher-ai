@@ -105,27 +105,46 @@ public static class TableService
   {
     ArgumentNullException.ThrowIfNull(userEmail);
     var weekStart = GetCurrentWeekStart();
-    var userSpend = await spendClient.GetEntityIfExistsAsync<SpendEntity>(weekStart, userEmail);
-    if (userSpend.HasValue)
+    for (var attempt = 0; attempt < 3; attempt++)
     {
-      var existingSpend = decimal.Parse(userSpend.Value.Spent, CultureInfo.InvariantCulture);
-      var newSpend = existingSpend + amount;
-      userSpend.Value.Spent = newSpend.ToString(CultureInfo.InvariantCulture);
-      await spendClient.UpdateEntityAsync(userSpend.Value, userSpend.Value.ETag);
-      return newSpend;
-    }
-    else
-    {
-      var newSpend = new SpendEntity
+      var userSpend = await spendClient.GetEntityIfExistsAsync<SpendEntity>(weekStart, userEmail);
+      if (userSpend.HasValue)
       {
-        PartitionKey = weekStart,
-        RowKey = userEmail,
-        Spent = amount.ToString(CultureInfo.InvariantCulture),
-        UserGroup = userGroup
-      };
-      await spendClient.AddEntityAsync(newSpend);
-      return amount;
+        var existingSpend = decimal.Parse(userSpend.Value.Spent, CultureInfo.InvariantCulture);
+        var newSpend = existingSpend + amount;
+        userSpend.Value.Spent = newSpend.ToString(CultureInfo.InvariantCulture);
+        try
+        {
+          await spendClient.UpdateEntityAsync(userSpend.Value, userSpend.Value.ETag);
+          return newSpend;
+        }
+        catch (RequestFailedException ex) when (ex.Status == 412)
+        {
+          continue;
+        }
+      }
+      else
+      {
+        var newEntity = new SpendEntity
+        {
+          PartitionKey = weekStart,
+          RowKey = userEmail,
+          Spent = amount.ToString(CultureInfo.InvariantCulture),
+          UserGroup = userGroup
+        };
+        try
+        {
+          await spendClient.AddEntityAsync(newEntity);
+          return amount;
+        }
+        catch (RequestFailedException ex) when (ex.Status == 409)
+        {
+          continue;
+        }
+      }
     }
+
+    throw new InvalidOperationException("Could not record spend after 3 attempts.");
   }
 
   public static async Task<decimal> GetSpendAsync(string userEmail)
