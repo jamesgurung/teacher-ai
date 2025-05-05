@@ -136,6 +136,15 @@ public static class TableService
     return userSpend.HasValue ? decimal.Parse(userSpend.Value.Spent, CultureInfo.InvariantCulture) : 0m;
   }
 
+  public static async Task<List<SpendEntity>> GetUsageDataAsync(List<string> userGroups)
+  {
+    var filters = userGroups.Select(g => TableClient.CreateQueryFilter($"UserGroup eq {g}"));
+    var filter = string.Join(" or ", filters);
+    var query = spendClient.QueryAsync<SpendEntity>(filter, select: ["PartitionKey", "RowKey", "Spent", "UserGroup"]);
+    var spendEntities = await query.ToListAsync();
+    return spendEntities.OrderBy(o => o.PartitionKey).ThenBy(o => o.UserGroup).ThenByDescending(o => o.Spent).ThenBy(o => o.RowKey).ToList();
+  }
+
   private static string GetCurrentWeekStart()
   {
     var now = DateTime.UtcNow;
@@ -175,12 +184,18 @@ public class ConversationEntity : ITableEntity
 
 public class SpendEntity : ITableEntity
 {
+  [JsonPropertyName("week")]
   public string PartitionKey { get; set; }
+  [JsonPropertyName("user")]
   public string RowKey { get; set; }
+  [JsonIgnore]
   public DateTimeOffset? Timestamp { get; set; }
+  [JsonIgnore]
   public ETag ETag { get; set; }
 
+  [JsonPropertyName("spend")]
   public string Spent { get; set; }
+  [JsonPropertyName("group")]
   public string UserGroup { get; set; }
 }
 

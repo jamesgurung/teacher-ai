@@ -194,7 +194,7 @@ button {
 #sidebar-header {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   padding: 12px;
   border-bottom: 1px solid var(--border-color);
   justify-content: flex-end;
@@ -943,7 +943,7 @@ h1.brand span {
   height: 90px;
 }
 
-#logout-btn span {
+#logout-btn span, #usage-btn span {
   position: relative;
   top: 2px;
 }

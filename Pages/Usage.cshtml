@@ -1,0 +1,76 @@
+@page
+@{
+  var reviewGroups = UserGroup.GroupNamesByReviewerEmail[User.Identity.Name].ToList();
+  var data = reviewGroups.Count == 0 ? new List<SpendEntity>() : await TableService.GetUsageDataAsync(reviewGroups);
+}
+<div id="usage-container" style="opacity: 0">
+  <a href="/" class="back-button"><span class="material-symbols-rounded">arrow_back</span></a>
+  <h1>@Organisation.Instance.Name AI Usage Dashboard</h1>
+  <div id="content">
+    <div class="filter-controls">
+      <div class="filter-options">
+        <div class="filter-item">
+          <label for="startSelect">Start:</label>
+          <select id="startSelect" class="filter-select">
+          </select>
+        </div>
+        <div class="filter-item">
+          <label for="endSelect">End:</label>
+          <select id="endSelect" class="filter-select">
+          </select>
+        </div>
+        <div class="filter-item">
+          <label for="groupSelect">Group:</label>
+          <select id="groupSelect" class="filter-select">
+            <option value="all">All Groups</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="charts-container">
+      <div class="chart-box">
+        <h2>Weekly Spend</h2>
+        <div class="chart-container">
+          <canvas id="weeklySpendChart"></canvas>
+        </div>
+      </div>
+      <div class="chart-box">
+        <h2 id="total">Total Spend</h2>
+        <div class="chart-container">
+          <canvas id="totalSpendChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="users-container">
+      <h2>Top Users</h2>
+      <div class="table-wrapper">
+        <table id="usersTable">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Group</th>
+              <th>Spend</th>
+            </tr>
+          </thead>
+          <tbody>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+<br/>
+
+@section Styles {
+  <link rel="stylesheet" href="/css/usage.css" />
+}
+
+@section Scripts {
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.9/dist/chart.umd.min.js"></script>
+  <script src="/js/usage.js"></script>
+  <script>
+    const spendData = @Html.Raw(Json.Serialize(data));
+  </script>
+}

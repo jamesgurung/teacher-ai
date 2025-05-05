@@ -45,7 +45,7 @@ builder.Services.AddWebOptimizer(pipeline =>
   {
     pipeline.MinifyCssFiles("css/*.css");
     pipeline.MinifyJsFiles("js/*.js");
-    pipeline.AddJavaScriptBundle("js/site.js", "js/*.js");
+    pipeline.AddJavaScriptBundle("js/site.js", "js/main.js", "js/presets.js", "js/history.js", "js/chat.js", "js/streaming.js");
   }
 });
 

@@ -19,6 +19,12 @@
       <a id="logout-btn" class="icon-button" href="/auth/logout">
         <span class="material-symbols-rounded">logout</span>
       </a>
+      @if (reviewGroups.Count > 0)
+      {
+      <a id="usage-btn" class="icon-button" href="/usage">
+        <span class="material-symbols-rounded">bar_chart</span>
+      </a>
+      }
       <button id="new-chat-btn">
         <span class="material-symbols-rounded">add</span>
         New Chat
@@ -72,7 +78,7 @@
     <div id="user" style="display: none"></div>
 
     <div id="welcome-message">
-      <img src="/logo.png" class="logo" />
+      <img src="/img/logo.png" class="logo" />
       <h1 class="brand">@Organisation.Instance.Name <span>AI</span></h1>
       <div id="intro-text"></div>
     </div>
