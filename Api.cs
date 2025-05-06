@@ -42,7 +42,7 @@ public static class Api
       Conversation conversation = null;
       ConversationEntity conversationEntity = null;
 
-      var moderationClient = new ModerationClient("omni-moderation-latest", OpenAIConfig.Instance.ApiKey);
+      var moderationClient = new ModerationClient("omni-moderation-latest", userGroup.ApiKey);
       float moderationScore;
 
       if (isFirstTurn)
@@ -73,7 +73,7 @@ public static class Api
           await TableService.UpsertConversationAsync(conversationEntity);
         }
         {
-          var summaryClient = new OpenAIResponseClient(OpenAIConfig.Instance.TitleSummarisationModel, OpenAIConfig.Instance.ApiKey);
+          var summaryClient = new OpenAIResponseClient(OpenAIConfig.Instance.TitleSummarisationModel, userGroup.ApiKey);
           var summaryOptions = new ResponseCreationOptions
           {
             EndUserId = id,
@@ -159,7 +159,7 @@ public static class Api
       else
       {
         var hasTemp = conversation.Preset.Temperature is not null;
-        var chatClient = new OpenAIResponseClient(model.Name, OpenAIConfig.Instance.ApiKey);
+        var chatClient = new OpenAIResponseClient(model.Name, userGroup.ApiKey);
         var chatOptions = new ResponseCreationOptions
         {
           EndUserId = id,

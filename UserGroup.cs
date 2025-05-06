@@ -30,6 +30,8 @@ public class UserGroup
   public Dictionary<string, Preset> PresetDictionary { get; set; }
   [JsonIgnore]
   public string PresetJson { get; set; }
+  [JsonIgnore]
+  public string ApiKey { get; set; }
 }
 
 public class StopCommand

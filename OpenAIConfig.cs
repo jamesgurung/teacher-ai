@@ -13,9 +13,11 @@ public class OpenAIConfig
 {
   public static OpenAIConfig Instance { get; set; }
 
-  public string ApiKey { get; set; }
   public decimal CostPer1KFileSearches { get; set; }
   public string TitleSummarisationModel { get; set; }
+  public string DefaultApiKey { get; set; }
+
+  public IList<UserGroupApiKey> ApiKeys { get; set; }
 
   private IList<OpenAIModelConfig> _models;
   public IList<OpenAIModelConfig> Models
@@ -28,4 +30,10 @@ public class OpenAIConfig
     }
   }
   public Dictionary<string, OpenAIModelConfig> ModelDictionary { get; set; }
+}
+
+public class UserGroupApiKey
+{
+  public string UserGroup { get; set; }
+  public string Key { get; set; }
 }

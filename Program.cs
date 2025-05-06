@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.AspNetCore.HttpOverrides;
-using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.SignalR;
 using OrgAI;
 using System.Text.Json;
@@ -23,6 +22,9 @@ var connectionString = $"DefaultEndpointsProtocol=https;AccountName={storageAcco
 TableService.Configure(connectionString);
 BlobService.Configure(connectionString);
 
+Organisation.Instance = builder.Configuration.GetSection("Organisation").Get<Organisation>();
+OpenAIConfig.Instance = builder.Configuration.GetSection("OpenAI").Get<OpenAIConfig>();
+
 await BlobService.LoadConfigAsync();
 
 builder.ConfigureAuth();
@@ -31,10 +33,6 @@ builder.Services.AddAntiforgery(options => { options.HeaderName = "X-XSRF-TOKEN"
 builder.Services.Configure<RouteOptions>(options => { options.LowercaseUrls = true; });
 builder.Services.Configure<JsonOptions>(options => { options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase; });
 builder.Services.AddRazorPages(options => { options.Conventions.AllowAnonymousToFolder("/auth"); });
-
-Organisation.Instance = builder.Configuration.GetSection("Organisation").Get<Organisation>();
-OpenAIConfig.Instance = builder.Configuration.GetSection("OpenAI").Get<OpenAIConfig>();
-
 builder.Services.AddSingleton<IUserIdProvider, EmailUserIdProvider>();
 builder.Services.AddSignalR();
 

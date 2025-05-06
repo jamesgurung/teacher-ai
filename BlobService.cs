@@ -91,6 +91,9 @@ public static class BlobService
           Message = "# This conversation has been flagged for review.\n\n" +
             "Our system detected content that may violate our usage policies. Please ensure that all conversations remain respectful and appropriate, avoiding sensitive topics."
         });
+        userGroup.ApiKey = OpenAIConfig.Instance.ApiKeys?.FirstOrDefault(o => string.Equals(o.UserGroup, userGroupName, StringComparison.OrdinalIgnoreCase))?.Key
+          ?? OpenAIConfig.Instance.DefaultApiKey;
+
         UserGroup.ConfigByGroupName[userGroupName] = userGroup;
       }
       catch (RequestFailedException ex) when (ex.Status == 404)

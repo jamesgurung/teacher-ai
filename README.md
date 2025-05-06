@@ -119,7 +119,6 @@ Originally known as *Teacher AI* for its focus on supporting staff in schools, t
 
     * `Organisation__Name` - the name of your organisation
     * `Organisation__AppWebsite` - the host name where this app will be hosted, e.g. `example.com`
-    * `Organisation__Reviewers__0` - the email address of a user to give reviewer access, which allows them to review all users' AI conversations (subsequent reviewers can be configured by adding additional items with incrementing indices)
     * `Organisation__CountryCode` - your country code, e.g. `GB` for Great Britain (used for localised web search)
     * `Organisation__City` - your city name (used for localised web search)
     * `Organisation__Timezone` - your timezone, e.g. `Europe/London` (used for localised web search)
@@ -128,7 +127,9 @@ Originally known as *Teacher AI* for its focus on supporting staff in schools, t
     * `Azure__StorageAccountName` - the name of your Azure Storage account
     * `Azure__StorageAccountKey` - the key for your Azure Storage account
     * `Azure__DataProtectionBlobUri` - the SAS URL for the keys file you created earlier
-    * `OpenAI__ApiKey` - the API key for your OpenAI account
+    * `OpenAI__DefaultApiKey` - the default OpenAI API key to use for all user groups where you have not configured a specific key
+    * `OpenAI__ApiKeys__0__UserGroup` - the name of the user group for which you are configuring a specific key (subsequent user groups can be configured by adding additional items with incrementing indices)
+    * `OpenAI__ApiKeys__0__Key` - the OpenAI API key for this user group
     * `OpenAI__CostPer1KFileSearches` - the OpenAI credit cost per 1K file searches
     * `OpenAI__TitleSummarisationModel` - the model which will be used to summarise titles, e.g. `gpt-4.1-nano`
     * `OpenAI__Models__0__Name` - the name of an OpenAI model you would like to make available, e.g. `gpt-4.1` (subsequent models can be configured by adding additional items with incrementing indices)
