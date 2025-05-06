@@ -108,7 +108,7 @@ async function resolveReviewItem(group) {
   if (nextItem) {
     const nextId = nextItem.id.replace('review-', '');
     reviewBadge.textContent = parseInt(reviewBadge.textContent, 10) - 1;
-    await loadChat(nextId, nextItem.dataset.user);
+    await loadChat(nextId, nextItem.dataset.user, nextItem.dataset.group);
   } else {
     reviewBadge.style.display = 'none';
     switchTab('presets');

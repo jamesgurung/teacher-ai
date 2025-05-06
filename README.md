@@ -19,6 +19,7 @@ Originally known as *Teacher AI* for its focus on supporting staff in schools, t
 * Chat history
 * Automated content moderation and manual review
 * Configurable weekly spend limits
+* Usage and cost dashboard
 * Support for all screen sizes, including mobile
 * Single sign-on (SSO) using Microsoft 365
 
