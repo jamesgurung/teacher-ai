@@ -45,7 +45,7 @@ builder.Services.AddWebOptimizer(pipeline =>
   {
     pipeline.MinifyCssFiles("css/*.css");
     pipeline.MinifyJsFiles("js/*.js");
-    pipeline.AddFiles("text/javascript", "lib/marked/lib/marked.umd.min.js", "lib/signalr/dist/browser/signalr.min.js");
+    pipeline.AddFiles("text/javascript", "lib/marked/lib/marked.umd.min.js", "lib/signalr/dist/browser/signalr.min.js", "lib/chart.js/dist/chart.umd.min.js");
     pipeline.AddJavaScriptBundle("js/site.js", "js/main.js", "js/presets.js", "js/history.js", "js/chat.js", "js/streaming.js");
   }
 });

@@ -17,6 +17,14 @@
       "files": [
         "lib/marked.umd.min.js"
       ]
+    },
+    {
+      "provider": "jsdelivr",
+      "library": "chart.js@4.4.9",
+      "destination": "wwwroot/lib/chart.js/",
+      "files": [
+        "dist/chart.umd.min.js"
+      ]
     }
   ]
 }

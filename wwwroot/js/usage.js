@@ -121,7 +121,8 @@ document.addEventListener('DOMContentLoaded', () => {
         data: groupData,
         backgroundColor: groupColors[group],
         borderColor: groupColors[group],
-        borderWidth: 1
+        borderWidth: 2,
+        borderColor: 'white'
       };
     });
 
@@ -196,7 +197,9 @@ document.addEventListener('DOMContentLoaded', () => {
         labels: groups,
         datasets: [{
           data: chartData,
-          backgroundColor: backgroundColors
+          backgroundColor: backgroundColors,
+          borderWidth: 2,
+          borderColor: 'white'
         }]
       },
       options: {
